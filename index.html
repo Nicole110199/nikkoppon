@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIKKOPPON — Crea tu sticker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Quicksand:wght@400;500;600;700&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="brandmark">
+    <img class="cat-logo" src="logo-nikkoppon.png" alt="Logo NIKKOPPON">
+    <div class="brandtext"><div class="word">NIKKOPPON</div><div class="tag">stickers &amp; posters</div></div>
+  </div>
+  <div class="header-right">
+    <div class="navlinks">
+      <span onclick="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})">Catálogo</span>
+    </div>
+    <button class="cart-btn" onclick="toggleCart(true)">
+      Carrito
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+  </div>
+</header>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <span>✦ HECHO A MANO &nbsp; ✦ ENVÍOS A TODO CHILE &nbsp; ✦ PERSONALIZA TU PROPIO STICKER &nbsp; ✦ PIDE EL TUYO HOY &nbsp;</span>
+    <span>✦ HECHO A MANO &nbsp; ✦ ENVÍOS A TODO CHILE &nbsp; ✦ PERSONALIZA TU PROPIO STICKER &nbsp; ✦ PIDE EL TUYO HOY &nbsp;</span>
+  </div>
+</div>
+
+<section class="hero-banner" id="heroBanner">
+  <div class="hero-banner-stars">
+    <span class="spark s1">✦</span><span class="spark s2">✦</span><span class="spark s3">✦</span><span class="spark s4">✧</span>
+  </div>
+  <div class="hero-banner-inner">
+    <div class="hero-copy">
+      <span class="eyebrow">✦ Hecho por ti, para ti</span>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="catalogo">
+  <div class="section-head">
+    <h2>Elige tu producto</h2>
+    <p>Personaliza cada uno con tu propia imagen.</p>
+  </div>
+  <div class="products-grid posters">
+
+    <button class="product-card" onclick="openModal('sticker')">
+      <div class="folder-tab" style="background:var(--lilac-deep)"></div>
+      <div class="swatch-preview"><img src="sticker-cover.png" alt="Sticker"></div>
+      <div class="eyebrow-label">Personalizable</div>
+      <h3>Sticker</h3>
+      <p class="desc">Elige acabado mate, tornasol o brillante, sube tu imagen y listo.</p>
+      <div class="price-pill">
+        <div class="price">desde $2.000<small>+ tamaño y cantidad</small></div>
+      </div>
+    </button>
+
+    <button class="product-card" onclick="openModal('poster')">
+      <div class="folder-tab" style="background:var(--amber-deep)"></div>
+      <div class="swatch-preview"><img src="poster-cover.png" alt="Poster"></div>
+      <div class="eyebrow-label">Personalizable</div>
+      <h3>Poster</h3>
+      <p class="desc">Disponible en A4 o 10 x 15 cm — sube tu imagen y listo.</p>
+      <div class="price-pill">
+        <div class="price">desde $3.500<small>+ cantidad</small></div>
+      </div>
+    </button>
+
+  </div>
+</section>
+
+<footer class="site">
+  <div class="word">NIKKOPPON</div>
+  <div style="margin-top:6px">Stickers y posters hechos a tu manera.</div>
+</footer>
+
+<!-- ---------- modal de personalización ---------- -->
+<div class="modal-backdrop hidden" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-titlebar">
+      <span class="modal-titlebar-title" id="modalWindowTitle">STICKER.EXE</span>
+      <div class="titlebar-controls">
+        <button type="button" class="win-btn win-min" tabindex="-1">_</button>
+        <button type="button" class="win-btn win-max" tabindex="-1">□</button>
+        <button type="button" class="win-btn win-close" onclick="closeModal()">×</button>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-eyebrow" id="modalEyebrow">Brillo holográfico</div>
+      <h2 id="modalTitle">Tornasol</h2>
+      <p class="modal-desc" id="modalDesc">Cambia de color según la luz.</p>
+
+      <div class="modal-grid">
+        <div class="controls">
+
+          <div class="field" id="materialField">
+            <div class="field-label"><span class="num">1</span>Acabado</div>
+            <div class="chip-row">
+              <button class="chip active" data-material="mate" onclick="setMaterial('mate')">Mate</button>
+              <button class="chip" data-material="tornasol" onclick="setMaterial('tornasol')">Tornasol</button>
+              <button class="chip" data-material="brillante" onclick="setMaterial('brillante')">Brillante</button>
+            </div>
+          </div>
+
+          <div class="field" id="sizeField">
+            <div class="field-label"><span class="num" id="sizeStepNum">2</span>Tamaño</div>
+            <div class="chip-row" id="sizeRow"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span class="num" id="uploadStepNum">3</span>Sube tu imagen</div>
+            <div class="dropzone" id="dropzone">
+              <input type="file" id="fileInput" accept="image/*" hidden>
+              <div class="dz-icon">✦</div>
+              <div class="dz-main">Arrastra tu imagen aquí</div>
+              <div class="dz-sub">PNG o JPG</div>
+              <button type="button" onclick="document.getElementById('fileInput').click()">Elegir archivo</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span class="num" id="notesStepNum">4</span>Observaciones <span style="font-weight:400;color:var(--ink-soft)">(opcional)</span></div>
+            <textarea class="notes" id="notesInput" placeholder="Ej: recortar dejando un borde blanco, centrar el logo, etc."></textarea>
+          </div>
+
+          <div class="field" style="margin-bottom:0">
+            <div class="field-label"><span class="num" id="qtyStepNum">5</span>Cantidad</div>
+            <div class="qty-row">
+              <button class="qty-btn" onclick="changeQty(-1)">−</button>
+              <div class="qty-val" id="qtyVal">1</div>
+              <button class="qty-btn" onclick="changeQty(1)">+</button>
+            </div>
+          </div>
+
+          <div class="price-row">
+            <div>
+              <div style="font-size:12px;color:var(--ink-soft)">Total</div>
+              <div class="price-val" id="priceVal">$2.500</div>
+            </div>
+            <button class="add-btn" onclick="addToCart()">Agregar al carrito</button>
+          </div>
+        </div>
+
+        <div class="preview-col">
+          <div class="stage" id="stage"></div>
+          <div class="preview-tag" id="previewTag"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- carrito (boleta) ---------- -->
+<div class="cart-backdrop" id="cartBackdrop" onclick="toggleCart(false)"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-head">
+    <button class="modal-close" onclick="toggleCart(false)">×</button>
+    <div class="receipt-brand">✦ NIKKOPPON ✦</div>
+    <div class="receipt-sub">BOLETA DE PEDIDO</div>
+    <div class="receipt-meta">
+      <span id="receiptNumber">N° 0001</span>
+      <span id="receiptDate">--/--/----</span>
+    </div>
+  </div>
+  <div class="tear-line"></div>
+  <div class="cart-items" id="cartItems">
+    <div class="cart-empty">Todavía no agregaste ningún producto.</div>
+  </div>
+  <div class="tear-line"></div>
+  <div class="cart-foot">
+    <div class="barcode"></div>
+    <div class="cart-total-row">
+      <span class="label">TOTAL</span>
+      <span class="val" id="cartTotal">$0</span>
+    </div>
+    <button class="add-btn" style="width:100%;margin-bottom:12px" onclick="sendOrderToInstagram()">Enviar pedido por Instagram</button>
+    <button class="transfer-toggle" id="transferToggle" onclick="toggleTransfer()">Ver datos para transferencia</button>
+    <div class="transfer-box" id="transferBox">
+      <div class="note">Reemplaza estos datos con los tuyos antes de publicar la página.</div>
+      <div class="row"><span>Titular</span><span>[Nombre del titular]</span></div>
+      <div class="row"><span>RUT</span><span>[Tu RUT]</span></div>
+      <div class="row"><span>Banco</span><span>[Nombre del banco]</span></div>
+      <div class="row"><span>Tipo de cuenta</span><span>[Cuenta Vista / Corriente]</span></div>
+      <div class="row"><span>N° de cuenta</span><span>[Número de cuenta]</span></div>
+      <div class="row"><span>Email</span><span>[tu@email.com]</span></div>
+      <div class="note" style="margin-top:10px;margin-bottom:0">Envía tu comprobante por Instagram para confirmar el pedido.</div>
+    </div>
+  </div>
+</div>
+
+<div id="sparkleLayer"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
