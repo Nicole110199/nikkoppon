@@ -715,9 +715,10 @@ async function confirmOrder(){
   const address = document.getElementById('custAddress').value.trim();
   const email = document.getElementById('custEmail').value.trim();
 
-  if(!name || !phone || !instagram){
-    alert('Completa tu nombre, teléfono e Instagram antes de continuar.');
+  if(!name || !phone || !instagram || !email){
+    alert('Completa tu nombre, teléfono, Instagram y email antes de continuar.');
     return;
+}
   }
   if(checkoutState.delivery === 'envio' && !address){
     alert('Ingresa tu dirección en Valdivia para coordinar el envío.');
