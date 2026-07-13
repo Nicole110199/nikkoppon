@@ -495,6 +495,7 @@ function toggleCart(open){
   document.getElementById('cartDrawer').classList.toggle('open', open);
   document.getElementById('cartBackdrop').classList.toggle('open', open);
   if(open) showView('cart');
+  updateFloatingCartBtn();
 }
 
 let lastRemoved = null;
@@ -528,12 +529,14 @@ function undoRemoveItem(){
 function updateFloatingCartBtn(){
   const btn = document.getElementById('floatingCartBtn');
   if(!btn) return;
-  if(cart.length === 0){
+  const drawer = document.getElementById('cartDrawer');
+  const isDrawerOpen = drawer && drawer.classList.contains('open');
+
+  if(cart.length === 0 || isDrawerOpen){
     btn.style.display = 'none';
     return;
   }
-  const total = getCartSubtotal();
-  document.getElementById('floatingCartTotal').textContent = formatCLP(total);
+  document.getElementById('floatingCartCount').textContent = cart.length;
   btn.style.display = 'flex';
 }
 
