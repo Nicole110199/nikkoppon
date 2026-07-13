@@ -19,8 +19,8 @@ const STICKER_SIZES = [
 ];
 
 const POSTER_SIZES = [
-  {id:'a4', label:'A4 (21 x 29,7 cm)', price:6000, wCm:21, hCm:29.7},
-  {id:'10x15', label:'10 x 15 cm', price:3500, wCm:10, hCm:15}
+  {id:'a4', label:'A4 (21 x 29,7 cm)', price:1200, wCm:21, hCm:29.7},
+  {id:'10x15', label:'10 x 15 cm', price:700, wCm:10, hCm:15}
 ];
 
 const FRAME_LONG_PX = 220;   // tamaño del marco de recorte en pantalla
