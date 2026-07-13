@@ -93,12 +93,16 @@ function renumberSteps(isSticker){
   document.getElementById('qtyStepNum').textContent = isSticker ? '5' : '4';
 }
 
+function hideModal(){
+  document.getElementById('modalBackdrop').classList.add('hidden');
+}
+
 function closeModal(){
   if(modalState.image){
     const sure = confirm('Tienes una imagen subida sin agregar al carrito. ¿Seguro que quieres cerrar? Se va a perder.');
     if(!sure) return;
   }
-  document.getElementById('modalBackdrop').classList.add('hidden');
+  hideModal();
 }
 
 function renderSizeRow(){
@@ -464,7 +468,7 @@ function addToCart(){
   });
 
   renderCart();
-  closeModal();
+  hideModal();
   toggleCart(true);
 }
 
