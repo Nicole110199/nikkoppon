@@ -18,7 +18,17 @@
   </div>
   <div class="header-right">
     <div class="navlinks">
+      <a href="https://instagram.com/nikkoppon" target="_blank" rel="noopener" class="ig-navlink">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="20" height="20" rx="6" stroke="currentColor" stroke-width="2"/>
+          <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+          <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/>
+        </svg>
+        Nosotros
+      </a>
+      <span onclick="document.getElementById('como-pedir').scrollIntoView({behavior:'smooth'})">Cómo pedir</span>
       <span onclick="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})">Catálogo</span>
+      <span onclick="document.getElementById('faq').scrollIntoView({behavior:'smooth'})">Preguntas frecuentes</span>
     </div>
     <button class="cart-btn" onclick="toggleCart(true)">
       Carrito
@@ -40,7 +50,38 @@
   </div>
   <div class="hero-banner-inner">
     <div class="hero-copy">
-      <span class="eyebrow">✦ Hecho por ti, para ti</span>
+    </div>
+  </div>
+</section>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="como-pedir">
+  <div class="section-head">
+    <h2>¿Cómo hacer tu pedido?</h2>
+    <p>Cuatro pasos simples, de principio a fin.</p>
+  </div>
+  <div class="steps-grid">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <h3>Elige y personaliza</h3>
+      <p>Escoge Sticker o Poster, el acabado/tamaño y sube tu imagen.</p>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <h3>Agrégalo al carrito</h3>
+      <p>Revisa tu pedido, la cantidad y el total antes de continuar.</p>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <h3>Completa tus datos</h3>
+      <p>Nombre, retiro o envío, teléfono y tu Instagram para contactarte.</p>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <h3>Transfiere y confirma</h3>
+      <p>Envía tu comprobante por Instagram dentro de los 30 minutos.</p>
     </div>
   </div>
 </section>
@@ -77,6 +118,35 @@
   </div>
 </section>
 
+<section class="block" id="faq">
+  <div class="section-head">
+    <h2>Preguntas frecuentes</h2>
+    <p>Lo que más nos preguntan.</p>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary>¿Cuánto demora mi pedido?</summary>
+      <p>Una vez confirmado el pago, tu pedido se prepara en 2 a 3 días hábiles. Te avisamos por Instagram cuando esté listo para retiro o envío.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿Cómo cuido mi sticker o poster?</summary>
+      <p>Evita el contacto prolongado con agua y la exposición directa al sol por muchas horas para que los colores no se destiñan con el tiempo.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿Hacen cambios o devoluciones?</summary>
+      <p>Como cada producto es personalizado con tu propia imagen, no se aceptan cambios ni devoluciones salvo error de fabricación de nuestra parte.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿A qué zonas hacen envío?</summary>
+      <p>Por ahora el envío a domicilio es solo dentro de Valdivia.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿Qué pasa si no envío el comprobante a tiempo?</summary>
+      <p>Tienes 30 minutos desde que confirmas el pedido para enviar el comprobante de transferencia por Instagram. Pasado ese tiempo, el pedido queda sin confirmar.</p>
+    </details>
+  </div>
+</section>
+
 <footer class="site">
   <div class="word">NIKKOPPON</div>
   <div style="margin-top:6px">Stickers y posters hechos a tu manera.</div>
@@ -88,8 +158,6 @@
     <div class="modal-titlebar">
       <span class="modal-titlebar-title" id="modalWindowTitle">STICKER.EXE</span>
       <div class="titlebar-controls">
-        <button type="button" class="win-btn win-min" tabindex="-1">_</button>
-        <button type="button" class="win-btn win-max" tabindex="-1">□</button>
         <button type="button" class="win-btn win-close" onclick="closeModal()">×</button>
       </div>
     </div>
@@ -106,14 +174,22 @@
             <div class="field-label"><span class="num">1</span>Acabado</div>
             <div class="chip-row">
               <button class="chip active" data-material="mate" onclick="setMaterial('mate')">Mate</button>
-              <button class="chip" data-material="tornasol" onclick="setMaterial('tornasol')">Tornasol</button>
               <button class="chip" data-material="brillante" onclick="setMaterial('brillante')">Brillante</button>
+              <button class="chip" data-material="tornasol" onclick="setMaterial('tornasol')">Tornasol</button>
             </div>
           </div>
 
           <div class="field" id="sizeField">
             <div class="field-label"><span class="num" id="sizeStepNum">2</span>Tamaño</div>
             <div class="chip-row" id="sizeRow"></div>
+          </div>
+
+          <div class="field" id="orientationField" style="display:none">
+            <div class="field-label"><span class="num">·</span>Orientación</div>
+            <div class="chip-row">
+              <button class="chip active" data-orient="vertical" onclick="setOrientation('vertical')">Vertical</button>
+              <button class="chip" data-orient="horizontal" onclick="setOrientation('horizontal')">Horizontal</button>
+            </div>
           </div>
 
           <div class="field">
@@ -125,6 +201,16 @@
               <div class="dz-sub">PNG o JPG</div>
               <button type="button" onclick="document.getElementById('fileInput').click()">Elegir archivo</button>
             </div>
+            <div class="res-warning" id="resWarning" style="display:none">⚠ Esta imagen es de baja resolución para el tamaño elegido — podría verse borrosa al imprimir. Si tienes una versión más grande, te recomendamos usarla.</div>
+          </div>
+
+          <div class="field" id="cropControlsField" style="display:none">
+            <div class="field-label">Ajustar recorte</div>
+            <div class="crop-controls">
+              <button type="button" class="crop-btn" onclick="rotateCropImage()">⟳ Rotar</button>
+              <input type="range" id="cropZoom" min="100" max="300" value="100" oninput="onZoomChange(this.value)">
+            </div>
+            <div class="hint">Arrastra la imagen dentro del marco para acomodarla.</div>
           </div>
 
           <div class="field">
@@ -163,7 +249,7 @@
 <div class="cart-backdrop" id="cartBackdrop" onclick="toggleCart(false)"></div>
 <div class="cart-drawer" id="cartDrawer">
   <div class="cart-head">
-    <button class="modal-close" onclick="toggleCart(false)">×</button>
+    <button class="win-btn win-close cart-close" onclick="toggleCart(false)">×</button>
     <div class="receipt-brand">✦ NIKKOPPON ✦</div>
     <div class="receipt-sub">BOLETA DE PEDIDO</div>
     <div class="receipt-meta">
@@ -172,32 +258,122 @@
     </div>
   </div>
   <div class="tear-line"></div>
-  <div class="cart-items" id="cartItems">
-    <div class="cart-empty">Todavía no agregaste ningún producto.</div>
-  </div>
-  <div class="tear-line"></div>
-  <div class="cart-foot">
-    <div class="barcode"></div>
-    <div class="cart-total-row">
-      <span class="label">TOTAL</span>
-      <span class="val" id="cartTotal">$0</span>
+
+  <!-- Vista 1: carrito -->
+  <div id="cartView" class="cart-view">
+    <div class="cart-items" id="cartItems">
+      <div class="cart-empty">Todavía no agregaste ningún producto.</div>
     </div>
-    <button class="add-btn" style="width:100%;margin-bottom:12px" onclick="sendOrderToInstagram()">Enviar pedido por Instagram</button>
-    <button class="transfer-toggle" id="transferToggle" onclick="toggleTransfer()">Ver datos para transferencia</button>
-    <div class="transfer-box" id="transferBox">
-      <div class="note">Reemplaza estos datos con los tuyos antes de publicar la página.</div>
-      <div class="row"><span>Titular</span><span>[Nombre del titular]</span></div>
-      <div class="row"><span>RUT</span><span>[Tu RUT]</span></div>
-      <div class="row"><span>Banco</span><span>[Nombre del banco]</span></div>
-      <div class="row"><span>Tipo de cuenta</span><span>[Cuenta Vista / Corriente]</span></div>
-      <div class="row"><span>N° de cuenta</span><span>[Número de cuenta]</span></div>
-      <div class="row"><span>Email</span><span>[tu@email.com]</span></div>
-      <div class="note" style="margin-top:10px;margin-bottom:0">Envía tu comprobante por Instagram para confirmar el pedido.</div>
+    <div class="tear-line"></div>
+    <div class="cart-foot">
+      <div class="barcode"></div>
+      <div class="cart-total-row">
+        <span class="label">TOTAL</span>
+        <span class="val" id="cartTotal">$0</span>
+      </div>
+      <button class="add-btn" style="width:100%" onclick="goToCheckout()">Continuar con el pago</button>
+    </div>
+  </div>
+
+  <!-- Vista 2: datos del cliente + pago -->
+  <div id="checkoutView" class="cart-view" style="display:none">
+    <div class="cart-items">
+      <div class="field">
+        <div class="field-label"><span class="num">1</span>Nombre y apellido</div>
+        <input type="text" id="custName" class="text-input" placeholder="¿A nombre de quién va el pedido?">
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span class="num">2</span>Retiro o envío</div>
+        <div class="chip-row">
+          <button class="chip active" data-delivery="retiro" onclick="setDelivery('retiro')">Retiro en Valdivia</button>
+          <button class="chip" data-delivery="envio" onclick="setDelivery('envio')">Envío a domicilio</button>
+        </div>
+        <div class="hint" id="deliveryHint">Coordinamos el punto y horario de retiro por Instagram.</div>
+      </div>
+
+      <div class="field" id="addressField" style="display:none">
+        <div class="field-label"><span class="num">·</span>Dirección en Valdivia</div>
+        <input type="text" id="custAddress" class="text-input" placeholder="Calle, número, sector">
+        <div class="hint">Por ahora solo hacemos envíos dentro de Valdivia.</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span class="num">3</span>Teléfono de contacto</div>
+        <div class="prefixed-input">
+          <span class="input-prefix">+56</span>
+          <input type="tel" id="custPhone" class="text-input" placeholder="9 1234 5678">
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span class="num">4</span>Tu Instagram</div>
+        <div class="prefixed-input">
+          <span class="input-prefix">@</span>
+          <input type="text" id="custInstagram" class="text-input" placeholder="tu_usuario">
+        </div>
+        <div class="hint">Para contactarte y confirmar el pago.</div>
+      </div>
+
+      <div class="field" style="margin-bottom:0">
+        <div class="field-label"><span class="num">5</span>Tu email <span style="font-weight:400;color:var(--ink-soft)">(opcional)</span></div>
+        <input type="email" id="custEmail" class="text-input" placeholder="Para enviarte una copia de tu pedido">
+      </div>
+    </div>
+    <div class="tear-line"></div>
+    <div class="cart-foot">
+      <div class="cart-total-row" id="deliveryFeeRow" style="display:none">
+        <span class="label">Envío a domicilio</span>
+        <span class="val small" id="deliveryFeeVal">$0</span>
+      </div>
+      <div class="cart-total-row">
+        <span class="label">TOTAL A TRANSFERIR</span>
+        <span class="val" id="checkoutTotal">$0</span>
+      </div>
+      <button class="add-btn" style="width:100%;margin-bottom:10px" id="confirmOrderBtn" onclick="confirmOrder()">Confirmar pedido</button>
+      <button class="transfer-toggle" onclick="backToCart()">Volver al carrito</button>
+    </div>
+  </div>
+
+  <!-- Vista 3: confirmación -->
+  <div id="confirmationView" class="cart-view" style="display:none">
+    <div class="cart-items">
+      <div class="confirmation-box">
+        <div class="confirmation-emoji">✦</div>
+        <h3>¡Pedido enviado!</h3>
+        <p>Ya registramos tu pedido <b id="confirmOrderNumber">N° 0000</b>. Ahora transfiere el total y envía tu comprobante por Instagram para confirmarlo.</p>
+        <div class="countdown-box">
+          <div class="countdown-label">Tienes 30 minutos para enviar tu comprobante</div>
+          <div class="countdown-timer" id="countdownTimer">30:00</div>
+          <div class="countdown-note">Pasado ese tiempo, el pedido se cancela automáticamente.</div>
+        </div>
+        <div class="transfer-box open" style="text-align:left">
+          <div class="note">Datos para la transferencia. Recuerda realizar el pago para Confirmar tu pedido. Envia el comprobante con tu numero de Pedido! ╰(´︶`)╯♡.</div>
+          <div class="row"><span>Titular</span><span>Nicole Navarro Amaro</span></div>
+          <div class="row"><span>RUT</span><span>20119863-1</span></div>
+          <div class="row"><span>Banco</span><span>Banco Estado</span></div>
+          <div class="row"><span>Tipo de cuenta</span><span>CuentaRUT</span></div>
+          <div class="row"><span>N° de cuenta</span><span>20119863</span></div>
+          <div class="row"><span>Email</span><span>consuelon00@gmail.com</span></div>
+        </div>
+        <button class="add-btn" style="width:100%;margin-bottom:10px" onclick="openInstagramForProof()">Enviar comprobante por Instagram</button>
+        <button class="transfer-toggle" onclick="closeConfirmation()">Cerrar</button>
+      </div>
     </div>
   </div>
 </div>
 
 <div id="sparkleLayer"></div>
+
+<button class="floating-cart-btn" id="floatingCartBtn" onclick="toggleCart(true)" style="display:none">
+  <span>🛒 Ver carrito</span>
+  <span id="floatingCartTotal">$0</span>
+</button>
+
+<div class="undo-toast" id="undoToast">
+  <span id="undoToastText">Producto quitado</span>
+  <button onclick="undoRemoveItem()">Deshacer</button>
+</div>
 
 <script src="script.js"></script>
 </body>
