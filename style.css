@@ -148,10 +148,10 @@ section.block{padding:10px 28px 70px;max-width:1180px;margin:0 auto;}
 .section-head p{color:var(--ink-soft);margin:0;font-size:15px;font-weight:600;}
 .min-order-badge{
   display:inline-flex;align-items:center;gap:6px;margin-top:12px;
-  background:linear-gradient(135deg, var(--butter), #F5A623);color:#5C3B00;
-  font-family:'Baloo 2';font-weight:800;font-size:14px;
-  padding:8px 18px;border-radius:30px;
-  box-shadow:0 4px 0 #D68A0F, 0 8px 16px rgba(214,138,15,0.3);
+  background:var(--butter);color:#5C3B00;
+  font-family:'Baloo 2';font-weight:800;font-size:13px;
+  padding:7px 14px;border-radius:10px;
+  border:2px solid #D68A0F;
 }
 
 /* ---------- product cards ---------- */
