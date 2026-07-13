@@ -718,7 +718,6 @@ async function confirmOrder(){
   if(!name || !phone || !instagram || !email){
     alert('Completa tu nombre, teléfono, Instagram y email antes de continuar.');
     return;
-}
   }
   if(checkoutState.delivery === 'envio' && !address){
     alert('Ingresa tu dirección en Valdivia para coordinar el envío.');
