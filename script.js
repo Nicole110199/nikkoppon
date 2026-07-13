@@ -6,6 +6,12 @@ const IG_USERNAME = 'nikkoppon';
    no lo configuras — el resto del sitio funciona igual sin esto. */
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKkTuXtlesP_SCjCmu7BYQlvaT2VqXkeaed5-pIz3RLq1U2aypAgqUyYErlC-60-rxoA/exec';
 
+/* ⚠️ Cambia esto por cualquier texto largo y difícil de adivinar (por ejemplo,
+   una mezcla de letras y números). Debe ser EXACTAMENTE el mismo valor que
+   pongas en SHARED_SECRET dentro de google-apps-script.gs — así el script
+   rechaza pedidos que no vengan de tu propia página. */
+const SHARED_SECRET = 'cambia-esto-por-algo-unico-nikkoppon-2026';
+
 const STICKER_MATERIALS = {
   mate:{ label:'Mate', desc:'Sin reflejos, textura suave al tacto. Ideal para un look minimalista.', basePrice:300, overlayClass:'overlay mate', swatchClass:'swatch-mate' },
   tornasol:{ label:'Tornasol', desc:'Cambia de color según la luz. El más llamativo para destacar tu diseño.', basePrice:500, overlayClass:'overlay tornasol', swatchClass:'swatch-tornasol' },
@@ -430,7 +436,7 @@ function reevaluateResolutionWarning(){
 function addToCart(){
   modalState.notes = document.getElementById('notesInput').value.trim();
 
-  let price, meta, name, swatchClass, boxWcm, boxHcm, materialLabel, finalImage;
+  let price, meta, name, swatchClass, boxWcm, boxHcm, materialLabel, finalImage, materialId, sizeId;
   if(modalState.type === 'sticker'){
     const size = STICKER_SIZES.find(s=>s.id===modalState.sizeId) || STICKER_SIZES[1];
     const mat = STICKER_MATERIALS[modalState.material];
@@ -441,6 +447,8 @@ function addToCart(){
     boxWcm = size.cm;
     boxHcm = size.cm;
     materialLabel = mat.label;
+    materialId = modalState.material;
+    sizeId = size.id;
     finalImage = modalState.image;
   } else {
     const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
@@ -452,12 +460,15 @@ function addToCart(){
     boxWcm = frameDims.wCm;
     boxHcm = frameDims.hCm;
     materialLabel = '';
+    materialId = null;
+    sizeId = size.id;
     finalImage = modalState.image ? exportCroppedImage() : null;
   }
 
   cart.push({
     type: modalState.type,
     material: materialLabel,
+    materialId, sizeId,
     name, meta,
     notes: modalState.notes,
     qty: modalState.qty,
@@ -647,6 +658,8 @@ async function buildOrderPayload(){
       type: item.type,
       name: item.name,
       material: item.material,
+      materialId: item.materialId,
+      sizeId: item.sizeId,
       meta: item.meta,
       notes: item.notes,
       qty: item.qty,
@@ -658,6 +671,7 @@ async function buildOrderPayload(){
   }
 
   return {
+    secret: SHARED_SECRET,
     orderNumber: (document.getElementById('receiptNumber') || {}).textContent || '',
     date: (document.getElementById('receiptDate') || {}).textContent || '',
     items,
