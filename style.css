@@ -491,3 +491,5 @@ footer.site .word{
 }
 .step-item h3{margin:0 0 8px;font-size:18px;}
 .step-item p{margin:0;font-size:13px;color:var(--ink-soft);line-height:1.5;font-weight:600;}
+
+.privacy-note{margin:16px 0 0;font-size:11px;color:var(--ink-soft);line-height:1.5;font-weight:600;text-align:center;}
