@@ -10,7 +10,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKkTuXtlesP_SC
    una mezcla de letras y números). Debe ser EXACTAMENTE el mismo valor que
    pongas en SHARED_SECRET dentro de google-apps-script.gs — así el script
    rechaza pedidos que no vengan de tu propia página. */
-const SHARED_SECRET = 'cambia-esto-por-algo-unico-nikkoppon-2026';
+const SHARED_SECRET = 'cree-la-cuenta-fucionando-mi-nombre-con-Nippon';
 
 const STICKER_MATERIALS = {
   mate:{ label:'Mate', desc:'Sin reflejos, textura suave al tacto. Ideal para un look minimalista.', basePrice:300, overlayClass:'overlay mate', swatchClass:'swatch-mate' },
@@ -597,6 +597,9 @@ function escapeHtml(str){
 /* ⚠️ Ajusta este valor al costo real de tu envío a domicilio dentro de Valdivia */
 const DELIVERY_FEE = 1500;
 
+/* ⚠️ Monto mínimo de compra (sin contar el envío) */
+const MIN_ORDER_TOTAL = 2000;
+
 let checkoutState = { delivery: 'retiro' };
 let countdownInterval = null;
 
@@ -622,6 +625,11 @@ function updateCheckoutTotal(){
 function goToCheckout(){
   if(cart.length === 0){
     alert('Tu carrito está vacío. Agrega al menos un producto antes de continuar.');
+    return;
+  }
+  const subtotal = getCartSubtotal();
+  if(subtotal < MIN_ORDER_TOTAL){
+    alert('La compra mínima es de ' + formatCLP(MIN_ORDER_TOTAL) + '. Te faltan ' + formatCLP(MIN_ORDER_TOTAL - subtotal) + ' para poder continuar.');
     return;
   }
   updateCheckoutTotal();
@@ -693,6 +701,12 @@ function sendOrderToGoogleDoc(payload){
 }
 
 async function confirmOrder(){
+  if(getCartSubtotal() < MIN_ORDER_TOTAL){
+    alert('La compra mínima es de ' + formatCLP(MIN_ORDER_TOTAL) + '.');
+    showView('cart');
+    return;
+  }
+
   const name = document.getElementById('custName').value.trim();
   const phoneRaw = document.getElementById('custPhone').value.trim();
   const instagramRaw = document.getElementById('custInstagram').value.trim();
