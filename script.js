@@ -1,876 +1,384 @@
-/* ⚠️ Reemplaza esto por tu usuario real de Instagram (sin @) */
-const IG_USERNAME = 'nikkoppon';
-
-/* ⚠️ Pega aquí la URL de tu Google Apps Script publicado como "Aplicación web"
-   (ver instrucciones en google-apps-script.gs). Déjalo vacío ('') si todavía
-   no lo configuras — el resto del sitio funciona igual sin esto. */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKkTuXtlesP_SCjCmu7BYQlvaT2VqXkeaed5-pIz3RLq1U2aypAgqUyYErlC-60-rxoA/exec';
-
-/* ⚠️ Cambia esto por cualquier texto largo y difícil de adivinar (por ejemplo,
-   una mezcla de letras y números). Debe ser EXACTAMENTE el mismo valor que
-   pongas en SHARED_SECRET dentro de google-apps-script.gs — así el script
-   rechaza pedidos que no vengan de tu propia página. */
-const SHARED_SECRET = 'cree-la-cuenta-fucionando-mi-nombre-con-Nippon';
-
-const STICKER_MATERIALS = {
-  mate:{ label:'Mate', desc:'Sin reflejos, textura suave al tacto. Ideal para un look minimalista.', basePrice:300, overlayClass:'overlay mate', swatchClass:'swatch-mate' },
-  tornasol:{ label:'Tornasol', desc:'Cambia de color según la luz. El más llamativo para destacar tu diseño.', basePrice:500, overlayClass:'overlay tornasol', swatchClass:'swatch-tornasol' },
-  brillante:{ label:'Brillante', desc:'Superficie vibrante que resalta los colores de tu imagen.', basePrice:400, overlayClass:'overlay brillante', swatchClass:'swatch-brillante' }
-};
-
-const STICKER_SIZES = [
-  {id:'s', label:'5 cm', mult:1, cm:5},
-  {id:'m', label:'8 cm', mult:1.4, cm:8},
-  {id:'l', label:'12 cm', mult:1.9, cm:12}
-];
-
-const POSTER_SIZES = [
-  {id:'a4', label:'A4 (21 x 29,7 cm)', price:1200, wCm:21, hCm:29.7},
-  {id:'10x15', label:'10 x 15 cm', price:700, wCm:10, hCm:15}
-];
-
-const FRAME_LONG_PX = 220;   // tamaño del marco de recorte en pantalla
-const CROP_EXPORT_LONG_PX = 1600; // resolución del recorte final exportado
-
-let cart = [];
-
-let modalState = {
-  type:null, material:'mate', sizeId:null, qty:1, image:null, notes:'',
-  orientation:'vertical',
-  crop:{ rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 }
-};
-
-// Para arrastrar la imagen dentro del marco de recorte (estado global,
-// para no ir acumulando listeners cada vez que se reconstruye el marco)
-let cropDrag = { active:false, startX:0, startY:0, baseOffsetX:0, baseOffsetY:0 };
-
-function formatCLP(n){
-  return '$' + Math.round(n).toLocaleString('es-CL');
-}
-
-function formatCm(n){
-  return (Math.round(n * 10) / 10).toString().replace('.', ',');
-}
-
-/* ---------- modal ---------- */
-
-function openModal(type){
-  modalState = {
-    type, material:'mate', sizeId: type==='sticker' ? 'm' : 'a4', qty:1, image:null, notes:'',
-    orientation:'vertical',
-    crop:{ rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 },
-    uploadedNatW:0, uploadedNatH:0
-  };
-  document.getElementById('notesInput').value = '';
-  document.getElementById('cropZoom').value = 100;
-  document.getElementById('resWarning').style.display = 'none';
-
-  const isSticker = type === 'sticker';
-  document.getElementById('materialField').style.display = isSticker ? '' : 'none';
-  document.getElementById('orientationField').style.display = isSticker ? 'none' : '';
-  document.getElementById('cropControlsField').style.display = 'none';
-  document.getElementById('modalWindowTitle').textContent = isSticker ? 'STICKER.EXE' : 'POSTER.EXE';
-
-  if(isSticker){
-    const mat = STICKER_MATERIALS[modalState.material];
-    document.getElementById('modalEyebrow').textContent = 'Personalizable';
-    document.getElementById('modalTitle').textContent = 'Sticker';
-    document.getElementById('modalDesc').textContent = mat.desc;
-    document.querySelectorAll('#materialField .chip').forEach(c=>c.classList.toggle('active', c.dataset.material==='mate'));
-  } else {
-    document.getElementById('modalEyebrow').textContent = 'Personalizable';
-    document.getElementById('modalTitle').textContent = 'Poster';
-    document.getElementById('modalDesc').textContent = 'Elige el tamaño y la orientación, sube tu imagen y acomódala dentro del marco.';
-    document.querySelectorAll('#orientationField .chip').forEach(c=>c.classList.toggle('active', c.dataset.orient==='vertical'));
-  }
-
-  renderSizeRow();
-  renumberSteps(isSticker);
-  buildStage();
-  updateModalTotals();
-
-  document.getElementById('modalBackdrop').classList.remove('hidden');
-}
-
-function renumberSteps(isSticker){
-  document.getElementById('sizeStepNum').textContent = isSticker ? '2' : '1';
-  document.getElementById('uploadStepNum').textContent = isSticker ? '3' : '2';
-  document.getElementById('notesStepNum').textContent = isSticker ? '4' : '3';
-  document.getElementById('qtyStepNum').textContent = isSticker ? '5' : '4';
-}
-
-function hideModal(){
-  document.getElementById('modalBackdrop').classList.add('hidden');
-}
-
-function closeModal(){
-  if(modalState.image){
-    const sure = confirm('Tienes una imagen subida sin agregar al carrito. ¿Seguro que quieres cerrar? Se va a perder.');
-    if(!sure) return;
-  }
-  hideModal();
-}
-
-function renderSizeRow(){
-  const row = document.getElementById('sizeRow');
-  row.innerHTML = '';
-  const list = modalState.type === 'sticker' ? STICKER_SIZES : POSTER_SIZES;
-  const activeId = modalState.sizeId;
-  list.forEach(s=>{
-    const b = document.createElement('button');
-    b.className = 'chip' + (s.id===activeId?' active':'');
-    b.textContent = s.label;
-    b.dataset.size = s.id;
-    b.onclick = ()=>setSize(s.id);
-    row.appendChild(b);
-  });
-}
-
-function setMaterial(materialId){
-  modalState.material = materialId;
-  document.querySelectorAll('#materialField .chip').forEach(c=>c.classList.toggle('active', c.dataset.material===materialId));
-  document.getElementById('modalDesc').textContent = STICKER_MATERIALS[materialId].desc;
-  buildStage();
-  updateModalTotals();
-}
-
-function setSize(id){
-  modalState.sizeId = id;
-  document.querySelectorAll('#sizeRow .chip').forEach(c=>c.classList.toggle('active', c.dataset.size===id));
-  if(modalState.type === 'poster'){
-    modalState.crop.offsetX = 0;
-    modalState.crop.offsetY = 0;
-    buildStage();
-  }
-  updateModalTotals();
-  reevaluateResolutionWarning();
-}
-
-function setOrientation(mode){
-  modalState.orientation = mode;
-  document.querySelectorAll('#orientationField .chip').forEach(c=>c.classList.toggle('active', c.dataset.orient===mode));
-  modalState.crop.offsetX = 0;
-  modalState.crop.offsetY = 0;
-  buildStage();
-  updateModalTotals();
-  reevaluateResolutionWarning();
-}
-
-function changeQty(delta){
-  modalState.qty = Math.max(1, modalState.qty + delta);
-  document.getElementById('qtyVal').textContent = modalState.qty;
-  updateModalTotals();
-}
-
-/* ---------- marco de recorte del poster (tamaño real en cm y px en pantalla) ---------- */
-
-function computeFrameDims(){
-  const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
-  const longSide = Math.max(size.wCm, size.hCm);
-  const shortSide = Math.min(size.wCm, size.hCm);
-  const wCm = modalState.orientation === 'horizontal' ? longSide : shortSide;
-  const hCm = modalState.orientation === 'horizontal' ? shortSide : longSide;
-
-  let wPx, hPx;
-  if(wCm >= hCm){ wPx = FRAME_LONG_PX; hPx = FRAME_LONG_PX * hCm / wCm; }
-  else { hPx = FRAME_LONG_PX; wPx = FRAME_LONG_PX * wCm / hCm; }
-
-  return { wCm, hCm, wPx, hPx };
-}
-
-function buildStage(){
-  const stage = document.getElementById('stage');
-  stage.innerHTML = '';
-
-  if(modalState.type === 'sticker'){
-    const wrap = document.createElement('div');
-    wrap.className = 'sticker-stage';
-    wrap.innerHTML = renderStageInner();
-    stage.appendChild(wrap);
-  } else {
-    const frameDims = computeFrameDims();
-    const frame = document.createElement('div');
-    frame.className = 'crop-frame';
-    frame.id = 'cropFrame';
-    frame.style.width = frameDims.wPx + 'px';
-    frame.style.height = frameDims.hPx + 'px';
-    frame.style.borderRadius = '6px';
-    frame.innerHTML =
-      '<div class="placeholder" id="placeholder"><div class="txt">Sube tu imagen</div></div>' +
-      '<img class="crop-image" id="artworkImg" style="display:none">';
-    stage.appendChild(frame);
-    frame.addEventListener('mousedown', startCropDrag);
-    frame.addEventListener('touchstart', startCropDrag, {passive:false});
-  }
-  refreshStageContent();
-}
-
-function renderStageInner(){
-  const overlay = STICKER_MATERIALS[modalState.material].overlayClass;
-  return '<div class="placeholder" id="placeholder"><div class="txt">Sube tu imagen</div></div>' +
-         '<img class="artwork" id="artworkImg" style="display:none">' +
-         '<div class="' + overlay + '" id="stageOverlay"></div>';
-}
-
-function refreshStageContent(){
-  const placeholder = document.getElementById('placeholder');
-  const img = document.getElementById('artworkImg');
-  if(!placeholder || !img) return;
-
-  if(modalState.type === 'sticker'){
-    const stickerWrap = document.querySelector('.sticker-stage');
-    if(modalState.image){
-      img.src = modalState.image;
-      img.style.display = 'block';
-      placeholder.style.display = 'none';
-      if(stickerWrap) stickerWrap.classList.add('has-image');
-    } else {
-      img.style.display = 'none';
-      placeholder.style.display = 'flex';
-      if(stickerWrap) stickerWrap.classList.remove('has-image');
-    }
-    return;
-  }
-
-  // poster: recortador interactivo
-  document.getElementById('cropControlsField').style.display = modalState.image ? '' : 'none';
-
-  if(!modalState.image){
-    placeholder.style.display = 'flex';
-    img.style.display = 'none';
-    return;
-  }
-
-  placeholder.style.display = 'none';
-  img.style.display = 'block';
-
-  if(img.src !== modalState.image || !modalState.crop.natW){
-    img.onload = () => {
-      modalState.crop.natW = img.naturalWidth;
-      modalState.crop.natH = img.naturalHeight;
-      renderCropTransform();
-    };
-    img.src = modalState.image;
-  } else {
-    renderCropTransform();
-  }
-}
-
-function renderCropTransform(){
-  const img = document.getElementById('artworkImg');
-  if(!img || modalState.type !== 'poster' || !modalState.crop.natW) return;
-
-  const frameDims = computeFrameDims();
-  const rot = modalState.crop.rotation;
-  const swapped = (rot === 90 || rot === 270);
-  const effW = swapped ? modalState.crop.natH : modalState.crop.natW;
-  const effH = swapped ? modalState.crop.natW : modalState.crop.natH;
-
-  const baseScale = Math.max(frameDims.wPx / effW, frameDims.hPx / effH);
-  const zoomFactor = modalState.crop.zoom;
-  const displayW = modalState.crop.natW * baseScale * zoomFactor;
-  const displayH = modalState.crop.natH * baseScale * zoomFactor;
-
-  // no dejar espacios vacíos dentro del marco al arrastrar
-  const rotDisplayW = swapped ? displayH : displayW;
-  const rotDisplayH = swapped ? displayW : displayH;
-  const maxOffsetX = Math.max(0, (rotDisplayW - frameDims.wPx) / 2);
-  const maxOffsetY = Math.max(0, (rotDisplayH - frameDims.hPx) / 2);
-  modalState.crop.offsetX = Math.min(maxOffsetX, Math.max(-maxOffsetX, modalState.crop.offsetX));
-  modalState.crop.offsetY = Math.min(maxOffsetY, Math.max(-maxOffsetY, modalState.crop.offsetY));
-
-  img.style.width = displayW + 'px';
-  img.style.height = displayH + 'px';
-  img.style.transform =
-    'translate(-50%, -50%) translate(' + modalState.crop.offsetX + 'px, ' + modalState.crop.offsetY + 'px) rotate(' + rot + 'deg)';
-}
-
-function rotateCropImage(){
-  modalState.crop.rotation = (modalState.crop.rotation + 90) % 360;
-  renderCropTransform();
-}
-
-function onZoomChange(val){
-  modalState.crop.zoom = Number(val) / 100;
-  renderCropTransform();
-}
-
-function startCropDrag(e){
-  cropDrag.active = true;
-  const frame = document.getElementById('cropFrame');
-  if(frame) frame.classList.add('dragging');
-  const p = e.touches ? e.touches[0] : e;
-  cropDrag.startX = p.clientX;
-  cropDrag.startY = p.clientY;
-  cropDrag.baseOffsetX = modalState.crop.offsetX;
-  cropDrag.baseOffsetY = modalState.crop.offsetY;
-  e.preventDefault();
-}
-
-function moveCropDrag(e){
-  if(!cropDrag.active) return;
-  const p = e.touches ? e.touches[0] : e;
-  modalState.crop.offsetX = cropDrag.baseOffsetX + (p.clientX - cropDrag.startX);
-  modalState.crop.offsetY = cropDrag.baseOffsetY + (p.clientY - cropDrag.startY);
-  renderCropTransform();
-}
-
-function endCropDrag(){
-  if(!cropDrag.active) return;
-  cropDrag.active = false;
-  const frame = document.getElementById('cropFrame');
-  if(frame) frame.classList.remove('dragging');
-}
-
-// Genera la imagen final tal como se ve en el marco (con el recorte, zoom
-// y rotación aplicados), lista para enviar al pedido.
-function exportCroppedImage(){
-  const img = document.getElementById('artworkImg');
-  if(!img || !modalState.crop.natW) return modalState.image;
-
-  const frameDims = computeFrameDims();
-  const rot = modalState.crop.rotation;
-  const swapped = (rot === 90 || rot === 270);
-  const effW = swapped ? modalState.crop.natH : modalState.crop.natW;
-  const effH = swapped ? modalState.crop.natW : modalState.crop.natH;
-  const baseScale = Math.max(frameDims.wPx / effW, frameDims.hPx / effH);
-  const zoomFactor = modalState.crop.zoom;
-  const displayW = modalState.crop.natW * baseScale * zoomFactor;
-  const displayH = modalState.crop.natH * baseScale * zoomFactor;
-
-  let outW, outH;
-  if(frameDims.wCm >= frameDims.hCm){
-    outW = CROP_EXPORT_LONG_PX;
-    outH = Math.round(CROP_EXPORT_LONG_PX * frameDims.hCm / frameDims.wCm);
-  } else {
-    outH = CROP_EXPORT_LONG_PX;
-    outW = Math.round(CROP_EXPORT_LONG_PX * frameDims.wCm / frameDims.hCm);
-  }
-
-  const scaleFactor = outW / frameDims.wPx;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = outW;
-  canvas.height = outH;
-  const ctx = canvas.getContext('2d');
-
-  ctx.save();
-  ctx.translate(outW / 2 + modalState.crop.offsetX * scaleFactor, outH / 2 + modalState.crop.offsetY * scaleFactor);
-  ctx.rotate(rot * Math.PI / 180);
-  ctx.drawImage(img, -(displayW * scaleFactor) / 2, -(displayH * scaleFactor) / 2, displayW * scaleFactor, displayH * scaleFactor);
-  ctx.restore();
-
-  return canvas.toDataURL('image/jpeg', 0.92);
-}
-
-function updateModalTotals(){
-  let price, sizeLabel;
-  if(modalState.type === 'sticker'){
-    const size = STICKER_SIZES.find(s=>s.id===modalState.sizeId) || STICKER_SIZES[1];
-    price = STICKER_MATERIALS[modalState.material].basePrice * size.mult * modalState.qty;
-    sizeLabel = size.label;
-  } else {
-    const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
-    const frameDims = computeFrameDims();
-    price = size.price * modalState.qty;
-    sizeLabel = formatCm(frameDims.wCm) + ' x ' + formatCm(frameDims.hCm) + ' cm';
-  }
-  document.getElementById('priceVal').textContent = formatCLP(price);
-
-  const tag = modalState.type === 'sticker'
-    ? 'Sticker · ' + STICKER_MATERIALS[modalState.material].label + ' · ' + sizeLabel
-    : 'Poster · ' + sizeLabel + ' · ' + (modalState.orientation === 'horizontal' ? 'Horizontal' : 'Vertical');
-  document.getElementById('previewTag').textContent = tag;
-}
-
-function handleFile(file){
-  if(!file || !file.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = (e)=>{
-    modalState.image = e.target.result;
-    if(modalState.type === 'poster'){
-      modalState.crop = { rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 };
-      document.getElementById('cropZoom').value = 100;
-    }
-    checkImageResolution(e.target.result);
-    refreshStageContent();
-  };
-  reader.readAsDataURL(file);
-}
-
-/* ---------- aviso de baja resolución ---------- */
-const MIN_PRINT_DPI = 150;
-
-function checkImageResolution(dataUrl){
-  const img = new Image();
-  img.onload = () => {
-    modalState.uploadedNatW = img.naturalWidth;
-    modalState.uploadedNatH = img.naturalHeight;
-    reevaluateResolutionWarning();
-  };
-  img.src = dataUrl;
-}
-
-function reevaluateResolutionWarning(){
-  const warningEl = document.getElementById('resWarning');
-  if(!warningEl) return;
-  if(!modalState.uploadedNatW){
-    warningEl.style.display = 'none';
-    return;
-  }
-
-  let targetCm;
-  if(modalState.type === 'sticker'){
-    const size = STICKER_SIZES.find(s=>s.id===modalState.sizeId) || STICKER_SIZES[1];
-    targetCm = size.cm;
-  } else {
-    const frameDims = computeFrameDims();
-    targetCm = Math.max(frameDims.wCm, frameDims.hCm);
-  }
-
-  const minPx = Math.round((targetCm / 2.54) * MIN_PRINT_DPI);
-  const longSide = Math.max(modalState.uploadedNatW, modalState.uploadedNatH);
-  warningEl.style.display = longSide < minPx ? '' : 'none';
-}
-
-function addToCart(){
-  modalState.notes = document.getElementById('notesInput').value.trim();
-
-  let price, meta, name, swatchClass, boxWcm, boxHcm, materialLabel, finalImage, materialId, sizeId;
-  if(modalState.type === 'sticker'){
-    const size = STICKER_SIZES.find(s=>s.id===modalState.sizeId) || STICKER_SIZES[1];
-    const mat = STICKER_MATERIALS[modalState.material];
-    price = mat.basePrice * size.mult * modalState.qty;
-    meta = mat.label + ' · ' + size.label;
-    name = 'Sticker';
-    swatchClass = mat.swatchClass;
-    boxWcm = size.cm;
-    boxHcm = size.cm;
-    materialLabel = mat.label;
-    materialId = modalState.material;
-    sizeId = size.id;
-    finalImage = modalState.image;
-  } else {
-    const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
-    const frameDims = computeFrameDims();
-    price = size.price * modalState.qty;
-    meta = formatCm(frameDims.wCm) + ' x ' + formatCm(frameDims.hCm) + ' cm · ' + (modalState.orientation === 'horizontal' ? 'Horizontal' : 'Vertical');
-    name = 'Poster';
-    swatchClass = 'swatch-posterA';
-    boxWcm = frameDims.wCm;
-    boxHcm = frameDims.hCm;
-    materialLabel = '';
-    materialId = null;
-    sizeId = size.id;
-    finalImage = modalState.image ? exportCroppedImage() : null;
-  }
-
-  cart.push({
-    type: modalState.type,
-    material: materialLabel,
-    materialId, sizeId,
-    name, meta,
-    notes: modalState.notes,
-    qty: modalState.qty,
-    price,
-    image: finalImage,
-    swatchClass,
-    boxWcm, boxHcm
-  });
-
-  renderCart();
-  hideModal();
-  toggleCart(true);
-}
-
-/* ---------- carrito ---------- */
-
-function showView(name){
-  document.getElementById('cartView').style.display = name === 'cart' ? 'flex' : 'none';
-  document.getElementById('checkoutView').style.display = name === 'checkout' ? 'flex' : 'none';
-  document.getElementById('confirmationView').style.display = name === 'confirmation' ? 'flex' : 'none';
-}
-
-function toggleCart(open){
-  document.getElementById('cartDrawer').classList.toggle('open', open);
-  document.getElementById('cartBackdrop').classList.toggle('open', open);
-  if(open) showView('cart');
-  updateFloatingCartBtn();
-}
-
-let lastRemoved = null;
-let undoTimeout = null;
-
-function removeCartItem(index){
-  lastRemoved = { item: cart[index], index };
-  cart.splice(index, 1);
-  renderCart();
-  showUndoToast();
-}
-
-function showUndoToast(){
-  document.getElementById('undoToast').classList.add('show');
-  clearTimeout(undoTimeout);
-  undoTimeout = setTimeout(()=>{
-    document.getElementById('undoToast').classList.remove('show');
-    lastRemoved = null;
-  }, 5000);
-}
-
-function undoRemoveItem(){
-  if(!lastRemoved) return;
-  cart.splice(lastRemoved.index, 0, lastRemoved.item);
-  lastRemoved = null;
-  clearTimeout(undoTimeout);
-  document.getElementById('undoToast').classList.remove('show');
-  renderCart();
-}
-
-function updateFloatingCartBtn(){
-  const btn = document.getElementById('floatingCartBtn');
-  if(!btn) return;
-  const drawer = document.getElementById('cartDrawer');
-  const isDrawerOpen = drawer && drawer.classList.contains('open');
-
-  if(cart.length === 0 || isDrawerOpen){
-    btn.style.display = 'none';
-    return;
-  }
-  document.getElementById('floatingCartCount').textContent = cart.length;
-  btn.style.display = 'flex';
-}
-
-function renderCart(){
-  const wrap = document.getElementById('cartItems');
-  document.getElementById('cartBadge').textContent = cart.length;
-
-  if(cart.length === 0){
-    wrap.innerHTML = '<div class="cart-empty">Todavía no agregaste ningún producto.</div>';
-    document.getElementById('cartTotal').textContent = '$0';
-    updateFloatingCartBtn();
-    return;
-  }
-
-  wrap.innerHTML = '';
-  let total = 0;
-  cart.forEach((item, i)=>{
-    total += item.price;
-    const row = document.createElement('div');
-    row.className = 'cart-item';
-
-    const thumb = document.createElement('div');
-    thumb.className = 'thumb';
-    if(item.image){
-      const img = document.createElement('img');
-      img.src = item.image;
-      thumb.appendChild(img);
-    } else {
-      const sw = document.createElement('div');
-      sw.className = item.swatchClass;
-      sw.style.position='absolute'; sw.style.inset='0';
-      thumb.appendChild(sw);
-    }
-
-    const info = document.createElement('div');
-    info.className = 'info';
-    info.innerHTML =
-      '<div class="name">' + item.name + ' x' + item.qty + '</div>' +
-      '<div class="meta">' + item.meta + '</div>' +
-      (item.notes ? '<div class="notes">"' + escapeHtml(item.notes) + '"</div>' : '') +
-      '<div class="row-bottom"><span class="price">' + formatCLP(item.price) + '</span>' +
-      '<button class="remove-btn" onclick="removeCartItem(' + i + ')">Quitar</button></div>';
-
-    row.appendChild(thumb);
-    row.appendChild(info);
-    wrap.appendChild(row);
-  });
-
-  document.getElementById('cartTotal').textContent = formatCLP(total);
-  updateFloatingCartBtn();
-}
-
-function escapeHtml(str){
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-/* ---------- checkout: datos del cliente + pago ---------- */
-
-/* ⚠️ Ajusta este valor al costo real de tu envío a domicilio dentro de Valdivia */
-const DELIVERY_FEE = 1500;
-
-/* ⚠️ Monto mínimo de compra (sin contar el envío) */
-const MIN_ORDER_TOTAL = 2000;
-
-let checkoutState = { delivery: 'retiro' };
-let countdownInterval = null;
-
-function getCartSubtotal(){
-  return cart.reduce((sum, item) => sum + item.price, 0);
-}
-
-function updateCheckoutTotal(){
-  const subtotal = getCartSubtotal();
-  const fee = checkoutState.delivery === 'envio' ? DELIVERY_FEE : 0;
-  const feeRow = document.getElementById('deliveryFeeRow');
-
-  if(fee > 0){
-    feeRow.style.display = '';
-    document.getElementById('deliveryFeeVal').textContent = formatCLP(fee);
-  } else {
-    feeRow.style.display = 'none';
-  }
-
-  document.getElementById('checkoutTotal').textContent = formatCLP(subtotal + fee);
-}
-
-function goToCheckout(){
-  if(cart.length === 0){
-    alert('Tu carrito está vacío. Agrega al menos un producto antes de continuar.');
-    return;
-  }
-  const subtotal = getCartSubtotal();
-  if(subtotal < MIN_ORDER_TOTAL){
-    alert('La compra mínima es de ' + formatCLP(MIN_ORDER_TOTAL) + '. Te faltan ' + formatCLP(MIN_ORDER_TOTAL - subtotal) + ' para poder continuar.');
-    return;
-  }
-  updateCheckoutTotal();
-  showView('checkout');
-}
-
-function backToCart(){
-  showView('cart');
-}
-
-function setDelivery(mode){
-  checkoutState.delivery = mode;
-  document.querySelectorAll('#checkoutView .chip[data-delivery]').forEach(c=>c.classList.toggle('active', c.dataset.delivery === mode));
-  const addressField = document.getElementById('addressField');
-  const hint = document.getElementById('deliveryHint');
-  if(mode === 'envio'){
-    addressField.style.display = '';
-    hint.textContent = 'Coordinamos el envío dentro de Valdivia una vez confirmado el pago. Tiene un costo adicional de ' + formatCLP(DELIVERY_FEE) + '.';
-  } else {
-    addressField.style.display = 'none';
-    hint.textContent = 'Coordinamos el punto y horario de retiro por Instagram.';
-  }
-  updateCheckoutTotal();
-}
-
-async function buildOrderPayload(){
-  if(cart.length === 0) return null;
-  let total = 0;
-  const items = [];
-
-  for(const item of cart){
-    total += item.price;
-    items.push({
-      type: item.type,
-      name: item.name,
-      material: item.material,
-      materialId: item.materialId,
-      sizeId: item.sizeId,
-      meta: item.meta,
-      notes: item.notes,
-      qty: item.qty,
-      price: item.price,
-      image: item.image,
-      boxWcm: item.boxWcm,
-      boxHcm: item.boxHcm
-    });
-  }
-
-  return {
-    secret: SHARED_SECRET,
-    orderNumber: (document.getElementById('receiptNumber') || {}).textContent || '',
-    date: (document.getElementById('receiptDate') || {}).textContent || '',
-    items,
-    subtotal: total,
-    deliveryFee: 0,
-    total: formatCLP(total)
-  };
-}
-
-function sendOrderToGoogleDoc(payload){
-  if(!APPS_SCRIPT_URL) return Promise.resolve({skipped:true});
-  return fetch(APPS_SCRIPT_URL, {
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify(payload)
-  })
-    .then(res=>res.json())
-    .catch(err=>{ console.error('Error enviando el pedido al documento de Google:', err); return {ok:false, error:err}; });
-}
-
-async function confirmOrder(){
-  if(getCartSubtotal() < MIN_ORDER_TOTAL){
-    alert('La compra mínima es de ' + formatCLP(MIN_ORDER_TOTAL) + '.');
-    showView('cart');
-    return;
-  }
-
-  const name = document.getElementById('custName').value.trim();
-  const phoneRaw = document.getElementById('custPhone').value.trim();
-  const instagramRaw = document.getElementById('custInstagram').value.trim();
-  const phone = phoneRaw ? '+56 ' + phoneRaw : '';
-  const instagram = instagramRaw ? '@' + instagramRaw.replace(/^@/, '') : '';
-  const address = document.getElementById('custAddress').value.trim();
-  const email = document.getElementById('custEmail').value.trim();
-
-  if(!name || !phone || !instagram || !email){
-    alert('Completa tu nombre, teléfono, Instagram y email antes de continuar.');
-    return;
-  }
-  if(checkoutState.delivery === 'envio' && !address){
-    alert('Ingresa tu dirección en Valdivia para coordinar el envío.');
-    return;
-  }
-
-  const btn = document.getElementById('confirmOrderBtn');
-  btn.disabled = true;
-  btn.textContent = 'Enviando...';
-
-  const payload = await buildOrderPayload();
-  if(!payload){
-    btn.disabled = false;
-    btn.textContent = 'Confirmar pedido';
-    return;
-  }
-
-  const fee = checkoutState.delivery === 'envio' ? DELIVERY_FEE : 0;
-  payload.deliveryFee = fee;
-  payload.total = formatCLP(payload.subtotal + fee);
-
-  payload.customer = {
-    name, phone, instagram, email,
-    delivery: checkoutState.delivery === 'envio' ? 'Envío a domicilio (Valdivia)' : 'Retiro en Valdivia',
-    address: checkoutState.delivery === 'envio' ? address : ''
-  };
-
-  sendOrderToGoogleDoc(payload).finally(()=>{
-    btn.disabled = false;
-    btn.textContent = 'Confirmar pedido';
-    document.getElementById('confirmOrderNumber').textContent = (document.getElementById('receiptNumber') || {}).textContent || '';
-    showView('confirmation');
-    startCountdown(30 * 60);
-    cart = [];
-    renderCart();
-  });
-}
-
-function startCountdown(seconds){
-  clearInterval(countdownInterval);
-  const el = document.getElementById('countdownTimer');
-  el.classList.remove('expired');
-  let remaining = seconds;
-
-  function render(){
-    const m = Math.floor(remaining / 60);
-    const s = remaining % 60;
-    el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-    if(remaining <= 0){
-      el.classList.add('expired');
-      clearInterval(countdownInterval);
-    }
-  }
-
-  render();
-  countdownInterval = setInterval(()=>{
-    remaining--;
-    render();
-  }, 1000);
-}
-
-function openInstagramForProof(){
-  window.open('https://ig.me/m/' + IG_USERNAME, '_blank');
-}
-
-function closeConfirmation(){
-  clearInterval(countdownInterval);
-  toggleCart(false);
-}
-
-/* ---------- upload dropzone (compartido por el modal) ---------- */
-
-function initUploader(){
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('fileInput');
-
-  dropzone.addEventListener('click', (e)=>{
-    if(e.target.tagName !== 'BUTTON') fileInput.click();
-  });
-  dropzone.addEventListener('dragover', (e)=>{
-    e.preventDefault();
-    dropzone.classList.add('dragging');
-  });
-  dropzone.addEventListener('dragleave', ()=>{
-    dropzone.classList.remove('dragging');
-  });
-  dropzone.addEventListener('drop', (e)=>{
-    e.preventDefault();
-    dropzone.classList.remove('dragging');
-    const file = e.dataTransfer.files[0];
-    handleFile(file);
-  });
-  fileInput.addEventListener('change', (e)=>{
-    handleFile(e.target.files[0]);
-  });
-}
-
-/* ---------- estrellas siguiendo el mouse en toda la página ---------- */
-
-function initGlobalSparkles(){
-  const layer = document.getElementById('sparkleLayer');
-  if(!layer) return;
-  const colors = ['#FF5DA8', '#5FD6FF', '#FFE066', '#B15CFF'];
-  const glyphs = ['✦', '✧', '⋆'];
-  let lastTime = 0;
-
-  function spawnSparkle(x, y){
-    const s = document.createElement('span');
-    s.className = 'cursor-sparkle';
-    s.textContent = glyphs[Math.floor(Math.random()*glyphs.length)];
-    s.style.left = x + 'px';
-    s.style.top = y + 'px';
-    s.style.color = colors[Math.floor(Math.random()*colors.length)];
-    s.style.fontSize = (12 + Math.random()*10) + 'px';
-    layer.appendChild(s);
-    setTimeout(()=> s.remove(), 700);
-  }
-
-  document.addEventListener('mousemove', (e)=>{
-    const now = Date.now();
-    if(now - lastTime < 70) return;
-    lastTime = now;
-    spawnSparkle(e.clientX, e.clientY);
-  });
-}
-
-/* ---------- datos de la boleta (número y fecha) ---------- */
-
-function initReceiptMeta(){
-  const numEl = document.getElementById('receiptNumber');
-  const dateEl = document.getElementById('receiptDate');
-  if(!numEl || !dateEl) return;
-  const num = String(Math.floor(1000 + Math.random()*9000));
-  numEl.textContent = 'N° ' + num;
-  const today = new Date();
-  const dd = String(today.getDate()).padStart(2,'0');
-  const mm = String(today.getMonth()+1).padStart(2,'0');
-  dateEl.textContent = dd + '/' + mm + '/' + today.getFullYear();
-}
-
-document.addEventListener('DOMContentLoaded', ()=>{
-  initUploader();
-  renderCart();
-  initGlobalSparkles();
-  initReceiptMeta();
-
-  // Listeners globales del recortador de poster (se agregan una sola vez;
-  // cropDrag.active controla si realmente hay que mover algo)
-  window.addEventListener('mousemove', moveCropDrag);
-  window.addEventListener('mouseup', endCropDrag);
-  window.addEventListener('touchmove', moveCropDrag, {passive:false});
-  window.addEventListener('touchend', endCropDrag);
-});
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIKKOPPON — Crea tu sticker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Quicksand:wght@400;500;600;700&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/png" href="logo-nikkoppon.png">
+</head>
+<body>
+
+<header class="site">
+  <div class="brandmark">
+    <img class="cat-logo" src="logo-nikkoppon.png" alt="Logo NIKKOPPON">
+    <div class="brandtext"><div class="word">NIKKOPPON</div><div class="tag">stickers &amp; posters</div></div>
+  </div>
+  <div class="header-right">
+    <div class="navlinks">
+      <span onclick="document.getElementById('como-pedir').scrollIntoView({behavior:'smooth'})">Cómo pedir</span>
+      <span onclick="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})">Catálogo</span>
+      <span onclick="document.getElementById('faq').scrollIntoView({behavior:'smooth'})">Preguntas frecuentes</span>
+    </div>
+    <a href="https://instagram.com/nikkoppon" target="_blank" rel="noopener" class="ig-navlink">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="20" height="20" rx="6" stroke="currentColor" stroke-width="2"/>
+        <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+        <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/>
+      </svg>
+      <span class="ig-navlink-text">Nosotros</span>
+    </a>
+    <button class="cart-btn" onclick="toggleCart(true)">
+      Carrito
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+  </div>
+</header>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <span>✦ HECHO A MANO &nbsp; ✦ SOLO VALDIVIA &nbsp; ✦ PERSONALIZA TU PROPIO STICKER &nbsp; ✦ PIDE EL TUYO HOY &nbsp;</span>
+    <span>✦ HECHO A MANO &nbsp; ✦ SOLO VALDIVIA &nbsp; ✦ PERSONALIZA TU PROPIO STICKER &nbsp; ✦ PIDE EL TUYO HOY &nbsp;</span>
+  </div>
+</div>
+
+<section class="hero-banner" id="heroBanner">
+  <div class="hero-banner-stars">
+    <span class="spark s1">✦</span><span class="spark s2">✦</span><span class="spark s3">✦</span><span class="spark s4">✧</span>
+  </div>
+</section>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="como-pedir">
+  <div class="section-head">
+    <h2>¿Cómo hacer tu pedido?</h2>
+    <p>Cuatro pasos simples, de principio a fin.</p>
+  </div>
+  <div class="steps-grid">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <h3>Elige y personaliza</h3>
+      <p>Escoge Sticker o Poster, el acabado/tamaño y sube tu imagen.</p>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <h3>Agrégalo al carrito</h3>
+      <p>Revisa tu pedido, la cantidad y el total antes de continuar.</p>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <h3>Completa tus datos</h3>
+      <p>Nombre, retiro o envío, teléfono y tu Instagram para contactarte.</p>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <h3>Transfiere y confirma</h3>
+      <p>Envía tu comprobante por Instagram dentro de los 30 minutos.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="catalogo">
+  <div class="section-head">
+    <h2>Elige tu producto</h2>
+    <p>Personaliza cada uno con tu propia imagen.</p>
+    <span class="min-order-badge">✦ Compra mínima: $2.000</span>
+  </div>
+  <div class="products-grid posters">
+
+    <button class="product-card" onclick="openModal('sticker')">
+      <div class="folder-tab" style="background:var(--lilac-deep)"></div>
+      <div class="swatch-preview"><img src="sticker-cover.png" alt="Sticker"></div>
+      <div class="eyebrow-label">Personalizable</div>
+      <h3>Sticker</h3>
+      <p class="desc">Elige acabado mate, tornasol o brillante, sube tu imagen y listo.</p>
+      <div class="price-pill">
+        <div class="price">desde $300<small>+ tamaño y cantidad</small></div>
+      </div>
+    </button>
+
+    <button class="product-card" onclick="openModal('poster')">
+      <div class="folder-tab" style="background:var(--amber-deep)"></div>
+      <div class="swatch-preview"><img src="poster-cover.png" alt="Poster"></div>
+      <div class="eyebrow-label">Personalizable</div>
+      <h3>Poster</h3>
+      <p class="desc">Disponible en A4 o 10 x 15 cm — sube tu imagen y listo.</p>
+      <div class="price-pill">
+        <div class="price">desde $700<small>+ cantidad</small></div>
+      </div>
+    </button>
+
+  </div>
+</section>
+
+<section class="block" id="faq">
+  <div class="section-head">
+    <h2>Preguntas frecuentes</h2>
+    <p>Lo que más nos preguntan.</p>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary>¿Cuánto demora mi pedido?</summary>
+      <p>Una vez confirmado el pago, tu pedido se prepara en 2 a 3 días hábiles. Te avisamos por Instagram cuando esté listo para retiro o envío.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿Cómo cuido mi sticker o poster?</summary>
+      <p>Evita el contacto prolongado con agua y la exposición directa al sol por muchas horas para que los colores no se destiñan con el tiempo.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿Hacen cambios o devoluciones?</summary>
+      <p>Como cada producto es personalizado con tu propia imagen, no se aceptan cambios ni devoluciones salvo error de fabricación de nuestra parte.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿A qué zonas hacen envío?</summary>
+      <p>Por ahora el envío a domicilio es solo dentro de Valdivia con un valor adicional de $1500 dependiendo de la zona.</p>
+    </details>
+    <details class="faq-item">
+      <summary>¿Qué pasa si no envío el comprobante a tiempo?</summary>
+      <p>Tienes 30 minutos desde que confirmas el pedido para enviar el comprobante de transferencia por Instagram. Pasado ese tiempo, el pedido queda sin confirmar.</p>
+    </details>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="word">NIKKOPPON</div>
+  <div style="margin-top:6px">Stickers y posters hechos a tu manera.</div>
+</footer>
+
+<!-- ---------- modal de personalización ---------- -->
+<div class="modal-backdrop hidden" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-titlebar">
+      <span class="modal-titlebar-title" id="modalWindowTitle">STICKER.EXE</span>
+      <div class="titlebar-controls">
+        <button type="button" class="win-btn win-close" onclick="closeModal()">×</button>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-eyebrow" id="modalEyebrow">Brillo holográfico</div>
+      <h2 id="modalTitle">Tornasol</h2>
+      <p class="modal-desc" id="modalDesc">Cambia de color según la luz.</p>
+
+      <div class="modal-grid">
+        <div class="controls">
+
+          <div class="field" id="materialField">
+            <div class="field-label"><span class="num">1</span>Acabado</div>
+            <div class="chip-row">
+              <button class="chip active" data-material="mate" onclick="setMaterial('mate')">Mate</button>
+              <button class="chip" data-material="brillante" onclick="setMaterial('brillante')">Brillante</button>
+              <button class="chip" data-material="tornasol" onclick="setMaterial('tornasol')">Tornasol</button>
+            </div>
+          </div>
+
+          <div class="field" id="sizeField">
+            <div class="field-label"><span class="num" id="sizeStepNum">2</span>Tamaño</div>
+            <div class="chip-row" id="sizeRow"></div>
+          </div>
+
+          <div class="field" id="orientationField" style="display:none">
+            <div class="field-label"><span class="num">·</span>Orientación</div>
+            <div class="chip-row">
+              <button class="chip active" data-orient="vertical" onclick="setOrientation('vertical')">Vertical</button>
+              <button class="chip" data-orient="horizontal" onclick="setOrientation('horizontal')">Horizontal</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span class="num" id="uploadStepNum">3</span>Sube tu imagen</div>
+            <div class="dropzone" id="dropzone">
+              <input type="file" id="fileInput" accept="image/*" hidden>
+              <div class="dz-icon">✦</div>
+              <div class="dz-main">Arrastra tu imagen aquí</div>
+              <div class="dz-sub">PNG o JPG</div>
+              <button type="button" onclick="document.getElementById('fileInput').click()">Elegir archivo</button>
+            </div>
+            <div class="res-warning" id="resWarning" style="display:none">⚠ Esta imagen es de baja resolución para el tamaño elegido — podría verse borrosa al imprimir. Si tienes una versión más grande, te recomendamos usarla.</div>
+          </div>
+
+          <div class="field" id="cropControlsField" style="display:none">
+            <div class="field-label">Ajustar recorte</div>
+            <div class="crop-controls">
+              <button type="button" class="crop-btn" onclick="rotateCropImage()">⟳ Rotar</button>
+              <input type="range" id="cropZoom" min="100" max="300" value="100" oninput="onZoomChange(this.value)">
+            </div>
+            <div class="hint">Arrastra la imagen dentro del marco para acomodarla.</div>
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span class="num" id="notesStepNum">4</span>Observaciones <span style="font-weight:400;color:var(--ink-soft)">(opcional)</span></div>
+            <textarea class="notes" id="notesInput" placeholder="Ej: recortar dejando un borde blanco, centrar el logo, etc."></textarea>
+          </div>
+
+          <div class="field" style="margin-bottom:0">
+            <div class="field-label"><span class="num" id="qtyStepNum">5</span>Cantidad</div>
+            <div class="qty-row">
+              <button class="qty-btn" onclick="changeQty(-1)">−</button>
+              <div class="qty-val" id="qtyVal">1</div>
+              <button class="qty-btn" onclick="changeQty(1)">+</button>
+            </div>
+          </div>
+
+          <div class="price-row">
+            <div>
+              <div style="font-size:12px;color:var(--ink-soft)">Total</div>
+              <div class="price-val" id="priceVal">$2.500</div>
+            </div>
+            <button class="add-btn" onclick="addToCart()">Agregar al carrito</button>
+          </div>
+        </div>
+
+        <div class="preview-col">
+          <div class="stage" id="stage"></div>
+          <div class="preview-tag" id="previewTag"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- carrito (boleta) ---------- -->
+<div class="cart-backdrop" id="cartBackdrop" onclick="toggleCart(false)"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-head">
+    <button class="win-btn win-close cart-close" onclick="toggleCart(false)">×</button>
+    <div class="receipt-brand">✦ NIKKOPPON ✦</div>
+    <div class="receipt-sub">BOLETA DE PEDIDO</div>
+    <div class="receipt-meta">
+      <span id="receiptNumber">N° 0001</span>
+      <span id="receiptDate">--/--/----</span>
+    </div>
+  </div>
+  <div class="tear-line"></div>
+
+  <!-- Vista 1: carrito -->
+  <div id="cartView" class="cart-view">
+    <div class="cart-items" id="cartItems">
+      <div class="cart-empty">Todavía no agregaste ningún producto.</div>
+    </div>
+    <div class="tear-line"></div>
+    <div class="cart-foot">
+      <div class="barcode"></div>
+      <div class="cart-total-row">
+        <span class="label">TOTAL</span>
+        <span class="val" id="cartTotal">$0</span>
+      </div>
+      <button class="add-btn" style="width:100%" onclick="goToCheckout()">Continuar con el pago</button>
+      <p class="min-order-note">Compra mínima: $2.000</p>
+    </div>
+  </div>
+
+  <!-- Vista 2: datos del cliente + pago -->
+  <div id="checkoutView" class="cart-view" style="display:none">
+    <div class="cart-items">
+      <div class="field">
+        <div class="field-label"><span class="num">1</span>Nombre y apellido</div>
+        <input type="text" id="custName" class="text-input" placeholder="¿A nombre de quién va el pedido?">
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span class="num">2</span>Retiro o envío</div>
+        <div class="chip-row">
+          <button class="chip active" data-delivery="retiro" onclick="setDelivery('retiro')">Retiro en Valdivia</button>
+          <button class="chip" data-delivery="envio" onclick="setDelivery('envio')">Envío a domicilio</button>
+        </div>
+        <div class="hint" id="deliveryHint">Coordinamos el punto y horario de retiro por Instagram.</div>
+      </div>
+
+      <div class="field" id="addressField" style="display:none">
+        <div class="field-label"><span class="num">·</span>Dirección en Valdivia</div>
+        <input type="text" id="custAddress" class="text-input" placeholder="Calle, número, sector">
+        <div class="hint">Por ahora solo hacemos envíos dentro de Valdivia.</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span class="num">3</span>Teléfono de contacto</div>
+        <div class="prefixed-input">
+          <span class="input-prefix">+56</span>
+          <input type="tel" id="custPhone" class="text-input" placeholder="9 1234 5678">
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span class="num">4</span>Tu Instagram</div>
+        <div class="prefixed-input">
+          <span class="input-prefix">@</span>
+          <input type="text" id="custInstagram" class="text-input" placeholder="tu_usuario">
+        </div>
+        <div class="hint">Para contactarte y confirmar el pago.</div>
+      </div>
+
+      <div class="field" style="margin-bottom:0">
+        <div class="field-label"><span class="num">5</span>Tu email</div>
+        <input type="email" id="custEmail" class="text-input" placeholder="Para confirmar tu pedido" required>
+      </div>
+      <p class="privacy-note">Tus datos se usan solo para preparar y coordinar este pedido — no se comparten con terceros.</p>
+    </div>
+    <div class="tear-line"></div>
+    <div class="cart-foot">
+      <div class="cart-total-row" id="deliveryFeeRow" style="display:none">
+        <span class="label">Envío a domicilio</span>
+        <span class="val small" id="deliveryFeeVal">$0</span>
+      </div>
+      <div class="cart-total-row">
+        <span class="label">TOTAL A TRANSFERIR</span>
+        <span class="val" id="checkoutTotal">$0</span>
+      </div>
+      <label class="terms-check">
+        <input type="checkbox" id="termsCheck">
+        <span>Confirmo que la imagen que subí es mía o tengo permiso para usarla, y que no contiene contenido ofensivo, ilegal o que infrinja derechos de autor.</span>
+      </label>
+      <button class="add-btn" style="width:100%;margin-bottom:10px" id="confirmOrderBtn" onclick="confirmOrder()">Confirmar pedido</button>
+      <button class="transfer-toggle" onclick="backToCart()">Volver al carrito</button>
+    </div>
+  </div>
+
+  <!-- Vista 3: confirmación -->
+  <div id="confirmationView" class="cart-view" style="display:none">
+    <div class="cart-items">
+      <div class="confirmation-box">
+        <div class="confirmation-emoji">✦</div>
+        <h3>¡Pedido enviado!</h3>
+        <p>Ya registramos tu pedido <b id="confirmOrderNumber">N° 0000</b>. Ahora transfiere el total y envía tu comprobante por Instagram para confirmarlo.</p>
+        <div class="countdown-box">
+          <div class="countdown-label">Tienes 30 minutos para enviar tu comprobante</div>
+          <div class="countdown-timer" id="countdownTimer">30:00</div>
+          <div class="countdown-note">Pasado ese tiempo, el pedido se cancela automáticamente.</div>
+        </div>
+        <div class="transfer-box open" style="text-align:left">
+          <div class="note">Datos para la transferencia. Recuerda realizar el pago para Confirmar tu pedido. Envia el comprobante con tu numero de Pedido! ╰(´︶`)╯♡.</div>
+          <div class="row"><span>Titular</span><span>Nicole Navarro Amaro</span></div>
+          <div class="row"><span>RUT</span><span>20119863-1</span></div>
+          <div class="row"><span>Banco</span><span>Banco Estado</span></div>
+          <div class="row"><span>Tipo de cuenta</span><span>CuentaRUT</span></div>
+          <div class="row"><span>N° de cuenta</span><span>20119863</span></div>
+          <div class="row"><span>Email</span><span>consuelon00@gmail.com</span></div>
+        </div>
+        <button class="add-btn" style="width:100%;margin-bottom:10px" onclick="openInstagramForProof()">Enviar comprobante por Instagram</button>
+        <button class="transfer-toggle" onclick="closeConfirmation()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="sparkleLayer"></div>
+
+<button class="floating-cart-btn" id="floatingCartBtn" onclick="toggleCart(true)" style="display:none">
+  🛒
+  <span class="floating-cart-count" id="floatingCartCount">0</span>
+</button>
+
+<div class="undo-toast" id="undoToast">
+  <span id="undoToastText">Producto quitado</span>
+  <button onclick="undoRemoveItem()">Deshacer</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
