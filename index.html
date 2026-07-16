@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Quicksand:wght@400;500;600;700&family=VT323&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<link rel="icon" type="logo-nikkoppon2.png" href="logo-nikkoppon2.png">
+<link rel="icon" type="image/png" href="logo-nikkoppon.png">
 </head>
 <body>
 
@@ -40,8 +40,8 @@
 
 <div class="marquee">
   <div class="marquee-track">
-    <span>✦ HECHO A MANO &nbsp; ✦ SOLO EN VALDIVIA &nbsp; ✦ PERSONALIZA TU PROPIO STICKER &nbsp; ✦ PIDE EL TUYO HOY &nbsp;</span>
-    <span>✦ HECHO A MANO &nbsp; ✦ SOLO EN VALDIVIA &nbsp; ✦ PERSONALIZA TU PROPIO STICKER &nbsp; ✦ PIDE EL TUYO HOY &nbsp;</span>
+    <span>✦ HECHO A MANO &nbsp; ✦ SOLO VALDIVIA &nbsp; ✦ PERSONALIZA TU PROPIO STICKER &nbsp; ✦ PIDE EL TUYO HOY &nbsp;</span>
+    <span>✦ HECHO A MANO &nbsp; ✦ SOLO VALDIVIA &nbsp; ✦ PERSONALIZA TU PROPIO STICKER &nbsp; ✦ PIDE EL TUYO HOY &nbsp;</span>
   </div>
 </div>
 
@@ -98,7 +98,7 @@
       <h3>Sticker</h3>
       <p class="desc">Elige acabado mate, tornasol o brillante, sube tu imagen y listo.</p>
       <div class="price-pill">
-        <div class="price">desde $300</div>
+        <div class="price">desde $300<small>+ tamaño y cantidad</small></div>
       </div>
     </button>
 
@@ -109,7 +109,7 @@
       <h3>Poster</h3>
       <p class="desc">Disponible en A4 o 10 x 15 cm — sube tu imagen y listo.</p>
       <div class="price-pill">
-        <div class="price">desde $700</div>
+        <div class="price">desde $700<small>+ cantidad</small></div>
       </div>
     </button>
 
@@ -330,6 +330,10 @@
         <span class="label">TOTAL A TRANSFERIR</span>
         <span class="val" id="checkoutTotal">$0</span>
       </div>
+      <label class="terms-check">
+        <input type="checkbox" id="termsCheck">
+        <span>Confirmo que la imagen que subí es mía o tengo permiso para usarla, y que no contiene contenido ofensivo, ilegal o que infrinja derechos de autor.</span>
+      </label>
       <button class="add-btn" style="width:100%;margin-bottom:10px" id="confirmOrderBtn" onclick="confirmOrder()">Confirmar pedido</button>
       <button class="transfer-toggle" onclick="backToCart()">Volver al carrito</button>
     </div>
