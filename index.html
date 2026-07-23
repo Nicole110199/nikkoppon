@@ -20,6 +20,7 @@
   <div class="header-right">
     <div class="navlinks">
       <span onclick="document.getElementById('como-pedir').scrollIntoView({behavior:'smooth'})">Cómo pedir</span>
+      <span onclick="document.getElementById('stock').scrollIntoView({behavior:'smooth'})">Stock</span>
       <span onclick="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})">Catálogo</span>
       <span onclick="document.getElementById('faq').scrollIntoView({behavior:'smooth'})">Preguntas frecuentes</span>
     </div>
@@ -80,6 +81,16 @@
       <h3>Transfiere y confirma</h3>
       <p>Envía tu comprobante por Instagram dentro de los 30 minutos.</p>
     </div>
+  </div>
+</section>
+
+<section class="block" id="stock">
+  <div class="section-head">
+    <h2>Stock disponible</h2>
+    <p>Diseños ya listos, sin personalizar — mientras haya stock.</p>
+  </div>
+  <div class="stock-grid" id="stockGrid">
+    <div class="stock-loading">Cargando stock...</div>
   </div>
 </section>
 
@@ -149,6 +160,61 @@
   <div class="word">NIKKOPPON</div>
   <div style="margin-top:6px">Stickers y posters hechos a tu manera.</div>
 </footer>
+
+<!-- ---------- modal de detalle de stock ---------- -->
+<div class="modal-backdrop hidden" id="stockModalBackdrop">
+  <div class="modal">
+    <div class="modal-titlebar">
+      <span class="modal-titlebar-title" id="stockModalTitle">STOCK.EXE</span>
+      <div class="titlebar-controls">
+        <button type="button" class="win-btn win-close" onclick="closeStockModal()">×</button>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-eyebrow">Diseño ya listo</div>
+      <h2 id="stockName">Nombre del sticker</h2>
+      <p class="modal-desc" id="stockAvailability">Disponibles: 0</p>
+
+      <div class="modal-grid">
+        <div class="controls">
+          <div class="field">
+            <div class="field-label">Acabado</div>
+            <p id="stockFinish" style="margin:0;font-weight:700;">—</p>
+          </div>
+          <div class="field">
+            <div class="field-label">Tamaño</div>
+            <p id="stockSize" style="margin:0;font-weight:700;">—</p>
+          </div>
+
+          <div class="field" style="margin-bottom:0">
+            <div class="field-label">Cantidad</div>
+            <div class="qty-row">
+              <button class="qty-btn" onclick="changeStockQty(-1)">−</button>
+              <div class="qty-val" id="stockQtyVal">1</div>
+              <button class="qty-btn" onclick="changeStockQty(1)">+</button>
+            </div>
+          </div>
+
+          <div class="price-row">
+            <div>
+              <div style="font-size:12px;color:var(--ink-soft)">Total</div>
+              <div class="price-val" id="stockPriceVal">$0</div>
+            </div>
+            <button class="add-btn" id="stockAddBtn" onclick="addStockToCart()">Agregar al carrito</button>
+          </div>
+        </div>
+
+        <div class="preview-col">
+          <div class="stock-gallery">
+            <img id="stockGalleryImg" src="" alt="">
+          </div>
+          <div class="stock-gallery-dots" id="stockGalleryDots"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ---------- modal de personalización ---------- -->
 <div class="modal-backdrop hidden" id="modalBackdrop">
