@@ -362,6 +362,11 @@
             </div>
           </div>
 
+          <label class="terms-check">
+            <input type="checkbox" id="termsCheck">
+            <span>Estoy de acuerdo con los <a href="#" class="terms-link" onclick="openTermsModal(); return false;">Términos y Condiciones</a>.</span>
+          </label>
+
           <div class="price-row">
             <div>
               <div style="font-size:12px;color:var(--ink-soft)">Total</div>
@@ -467,10 +472,6 @@
         <span class="label">TOTAL A TRANSFERIR</span>
         <span class="val" id="checkoutTotal">$0</span>
       </div>
-      <label class="terms-check">
-        <input type="checkbox" id="termsCheck">
-        <span>Estoy de acuerdo con los <a href="#" class="terms-link" onclick="openTermsModal(); return false;">Términos y Condiciones</a>.</span>
-      </label>
       <button class="add-btn" style="width:100%;margin-bottom:10px" id="confirmOrderBtn" onclick="confirmOrder()">Confirmar pedido</button>
       <button class="transfer-toggle" onclick="backToCart()">Volver al carrito</button>
     </div>
