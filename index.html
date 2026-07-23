@@ -244,6 +244,48 @@
   </div>
 </div>
 
+<!-- ---------- modal de términos y condiciones ---------- -->
+<div class="modal-backdrop hidden" id="termsModalBackdrop">
+  <div class="modal">
+    <div class="modal-titlebar">
+      <span class="modal-titlebar-title">TERMINOS.EXE</span>
+      <div class="titlebar-controls">
+        <button type="button" class="win-btn win-close" onclick="closeTermsModal()">×</button>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-eyebrow">Antes de confirmar tu pedido</div>
+      <h2>Términos y Condiciones</h2>
+
+      <div class="terms-section">
+        <h3>Cambios y devoluciones</h3>
+        <ul>
+          <li>Como cada producto se personaliza con tu propia imagen, no se aceptan cambios ni devoluciones, salvo error de fabricación de nuestra parte.</li>
+        </ul>
+      </div>
+
+      <div class="terms-section">
+        <h3>Contenido no permitido</h3>
+        <ul>
+          <li>No fabricamos stickers ni posters con contenido sexual explícito, violento, discriminatorio, o que infrinja derechos de autor de terceros sin autorización.</li>
+          <li>Si tu pedido incluye este tipo de contenido, no se fabricará y el pedido quedará cancelado.</li>
+        </ul>
+      </div>
+
+      <div class="terms-section">
+        <h3>Cuidado del producto</h3>
+        <ul>
+          <li>Evita el contacto prolongado con agua y la exposición directa al sol por muchas horas, para que los colores no se destiñan con el tiempo.</li>
+          <li>Una vez entregado el producto, su cuidado es responsabilidad tuya.</li>
+        </ul>
+      </div>
+
+      <button class="add-btn" style="width:100%;margin-top:10px" onclick="closeTermsModal()">Entendido</button>
+    </div>
+  </div>
+</div>
+
 <!-- ---------- modal de personalización ---------- -->
 <div class="modal-backdrop hidden" id="modalBackdrop">
   <div class="modal">
@@ -290,10 +332,11 @@
               <input type="file" id="fileInput" accept="image/*" hidden>
               <div class="dz-icon">✦</div>
               <div class="dz-main">Arrastra tu imagen aquí</div>
-              <div class="dz-sub">PNG o JPG</div>
+              <div class="dz-sub">PNG, JPG o WEBP</div>
               <button type="button" onclick="document.getElementById('fileInput').click()">Elegir archivo</button>
             </div>
             <div class="res-warning" id="resWarning" style="display:none">⚠ Esta imagen es de baja resolución para el tamaño elegido — podría verse borrosa al imprimir. Si tienes una versión más grande, te recomendamos usarla.</div>
+            <p class="upload-note">Aceptamos imágenes en PNG, JPG o WEBP 💛 Procura que sea de buena calidad — la imprimimos tal cual la recibimos, así que entre mejor se vea tu imagen, mejor va a quedar tu sticker o poster.</p>
           </div>
 
           <div class="field" id="cropControlsField" style="display:none">
@@ -426,7 +469,7 @@
       </div>
       <label class="terms-check">
         <input type="checkbox" id="termsCheck">
-        <span>Confirmo que la imagen que subí es mía o tengo permiso para usarla, y que no contiene contenido ofensivo, ilegal o que infrinja derechos de autor.</span>
+        <span>Estoy de acuerdo con los <a href="#" class="terms-link" onclick="openTermsModal(); return false;">Términos y Condiciones</a>.</span>
       </label>
       <button class="add-btn" style="width:100%;margin-bottom:10px" id="confirmOrderBtn" onclick="confirmOrder()">Confirmar pedido</button>
       <button class="transfer-toggle" onclick="backToCart()">Volver al carrito</button>
