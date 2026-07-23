@@ -671,6 +671,7 @@ async function buildOrderPayload(){
     total += item.price;
     items.push({
       type: item.type,
+      stockId: item.stockId,
       name: item.name,
       material: item.material,
       materialId: item.materialId,
@@ -869,11 +870,152 @@ function initReceiptMeta(){
   dateEl.textContent = dd + '/' + mm + '/' + today.getFullYear();
 }
 
+/* ---------- stock disponible (sincronizado con Google Sheets) ---------- */
+
+let stockItems = [];
+let stockModalState = { item: null, qty: 1, galleryIndex: 0 };
+
+function loadStock(){
+  const grid = document.getElementById('stockGrid');
+  if(!APPS_SCRIPT_URL){
+    grid.innerHTML = '<div class="stock-empty">El stock todavía no está conectado.</div>';
+    return;
+  }
+
+  fetch(APPS_SCRIPT_URL + '?action=stock')
+    .then(res => res.json())
+    .then(data => {
+      stockItems = (data && data.items) || [];
+      renderStockGrid();
+    })
+    .catch(err => {
+      console.error('Error cargando el stock:', err);
+      grid.innerHTML = '<div class="stock-empty">No se pudo cargar el stock. Intenta recargar la página.</div>';
+    });
+}
+
+function renderStockGrid(){
+  const grid = document.getElementById('stockGrid');
+  if(stockItems.length === 0){
+    grid.innerHTML = '<div class="stock-empty">Por ahora no hay stock disponible — mira el catálogo personalizable arriba.</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  stockItems.forEach(item=>{
+    const qty = Number(item.qty) || 0;
+    const card = document.createElement('button');
+    card.className = 'stock-card' + (qty <= 0 ? ' is-out' : '');
+    card.onclick = () => openStockModal(item.id);
+
+    const tagClass = qty <= 0 ? 'out-stock' : (qty <= 2 ? 'low-stock' : 'in-stock');
+    const tagText = qty <= 0 ? 'Agotado' : ('Disponibles: ' + qty);
+
+    card.innerHTML =
+      '<div class="stock-thumb"><img src="' + (item.image1 || '') + '" alt="' + escapeHtml(item.name || '') + '"></div>' +
+      '<h3>' + escapeHtml(item.name || '') + '</h3>' +
+      '<span class="stock-qty-tag ' + tagClass + '">' + tagText + '</span>' +
+      '<span class="stock-price">' + formatCLP(Number(item.price) || 0) + '</span>';
+
+    grid.appendChild(card);
+  });
+}
+
+function openStockModal(id){
+  const item = stockItems.find(s => s.id === id);
+  if(!item) return;
+
+  stockModalState = { item, qty: 1, galleryIndex: 0 };
+
+  document.getElementById('stockName').textContent = item.name || '';
+  document.getElementById('stockFinish').textContent = item.finish || '—';
+  document.getElementById('stockSize').textContent = item.size || '—';
+  document.getElementById('stockQtyVal').textContent = 1;
+
+  const qtyAvail = Number(item.qty) || 0;
+  document.getElementById('stockAvailability').textContent =
+    qtyAvail > 0 ? 'Disponibles: ' + qtyAvail : 'Agotado';
+
+  const addBtn = document.getElementById('stockAddBtn');
+  addBtn.disabled = qtyAvail <= 0;
+  addBtn.textContent = qtyAvail <= 0 ? 'Agotado' : 'Agregar al carrito';
+
+  renderStockGallery();
+  updateStockTotals();
+
+  document.getElementById('stockModalBackdrop').classList.remove('hidden');
+}
+
+function closeStockModal(){
+  document.getElementById('stockModalBackdrop').classList.add('hidden');
+}
+
+function renderStockGallery(){
+  const item = stockModalState.item;
+  const images = [item.image1, item.image2].filter(Boolean);
+  if(images.length === 0) images.push('');
+
+  const idx = stockModalState.galleryIndex % images.length;
+  document.getElementById('stockGalleryImg').src = images[idx];
+  document.getElementById('stockGalleryImg').alt = item.name || '';
+
+  const dots = document.getElementById('stockGalleryDots');
+  dots.innerHTML = '';
+  if(images.length > 1){
+    images.forEach((img, i)=>{
+      const dot = document.createElement('button');
+      dot.className = 'dot' + (i === idx ? ' active' : '');
+      dot.onclick = () => { stockModalState.galleryIndex = i; renderStockGallery(); };
+      dots.appendChild(dot);
+    });
+  }
+}
+
+function changeStockQty(delta){
+  const maxQty = Number(stockModalState.item.qty) || 0;
+  stockModalState.qty = Math.max(1, Math.min(maxQty, stockModalState.qty + delta));
+  document.getElementById('stockQtyVal').textContent = stockModalState.qty;
+  updateStockTotals();
+}
+
+function updateStockTotals(){
+  const price = (Number(stockModalState.item.price) || 0) * stockModalState.qty;
+  document.getElementById('stockPriceVal').textContent = formatCLP(price);
+}
+
+function addStockToCart(){
+  const item = stockModalState.item;
+  const qtyAvail = Number(item.qty) || 0;
+  if(qtyAvail <= 0) return;
+
+  const images = [item.image1, item.image2].filter(Boolean);
+
+  cart.push({
+    type: 'stock',
+    stockId: item.id,
+    material: item.finish || '',
+    name: item.name,
+    meta: (item.finish || '') + (item.finish && item.size ? ' · ' : '') + (item.size || ''),
+    notes: '',
+    qty: stockModalState.qty,
+    price: (Number(item.price) || 0) * stockModalState.qty,
+    image: images[0] || null,
+    swatchClass: 'swatch-mate'
+  });
+
+  renderCart();
+  closeStockModal();
+  toggleCart(true);
+}
+
+
+
 document.addEventListener('DOMContentLoaded', ()=>{
   initUploader();
   renderCart();
   initGlobalSparkles();
   initReceiptMeta();
+  loadStock();
 
   // Listeners globales del recortador de poster (se agregan una sola vez;
   // cropDrag.active controla si realmente hay que mover algo)
