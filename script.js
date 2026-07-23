@@ -885,6 +885,11 @@ function loadStock(){
   fetch(APPS_SCRIPT_URL + '?action=stock')
     .then(res => res.json())
     .then(data => {
+      if(data && data.error){
+        console.error('Error del Apps Script al leer el stock:', data.error);
+        grid.innerHTML = '<div class="stock-empty">Error leyendo el stock: ' + escapeHtml(data.error) + '</div>';
+        return;
+      }
       stockItems = (data && data.items) || [];
       renderStockGrid();
     })
