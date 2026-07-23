@@ -54,16 +54,27 @@ function formatCm(n){
 
 /* ---------- modal ---------- */
 
-function openModal(type){
+let editingCartIndex = null;
+
+function openModal(type, prefill){
+  if(!prefill) editingCartIndex = null;
+
   modalState = {
-    type, material:'mate', sizeId: type==='sticker' ? 'm' : 'a4', qty:1, image:null, notes:'',
-    orientation:'vertical',
+    type,
+    material: (prefill && prefill.materialId) || 'mate',
+    sizeId: (prefill && prefill.sizeId) || (type==='sticker' ? 'm' : 'a4'),
+    qty: (prefill && prefill.qty) || 1,
+    image: (prefill && prefill.image) || null,
+    notes: (prefill && prefill.notes) || '',
+    orientation: (prefill && prefill.orientation) || 'vertical',
     crop:{ rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 },
     uploadedNatW:0, uploadedNatH:0
   };
-  document.getElementById('notesInput').value = '';
+  document.getElementById('notesInput').value = modalState.notes;
   document.getElementById('cropZoom').value = 100;
   document.getElementById('resWarning').style.display = 'none';
+  document.getElementById('termsCheck').checked = false;
+  document.getElementById('qtyVal').textContent = modalState.qty;
 
   const isSticker = type === 'sticker';
   document.getElementById('materialField').style.display = isSticker ? '' : 'none';
@@ -76,18 +87,21 @@ function openModal(type){
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Sticker';
     document.getElementById('modalDesc').textContent = mat.desc;
-    document.querySelectorAll('#materialField .chip').forEach(c=>c.classList.toggle('active', c.dataset.material==='mate'));
+    document.querySelectorAll('#materialField .chip').forEach(c=>c.classList.toggle('active', c.dataset.material===modalState.material));
   } else {
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Poster';
     document.getElementById('modalDesc').textContent = 'Elige el tamaño y la orientación, sube tu imagen y acomódala dentro del marco.';
-    document.querySelectorAll('#orientationField .chip').forEach(c=>c.classList.toggle('active', c.dataset.orient==='vertical'));
+    document.querySelectorAll('#orientationField .chip').forEach(c=>c.classList.toggle('active', c.dataset.orient===modalState.orientation));
   }
 
   renderSizeRow();
   renumberSteps(isSticker);
   buildStage();
   updateModalTotals();
+
+  const addBtn = document.querySelector('#modalBackdrop .add-btn');
+  if(addBtn) addBtn.textContent = prefill ? 'Guardar cambios' : 'Agregar al carrito';
 
   document.getElementById('modalBackdrop').classList.remove('hidden');
 }
@@ -108,6 +122,7 @@ function closeModal(){
     const sure = confirm('Tienes una imagen subida sin agregar al carrito. ¿Seguro que quieres cerrar? Se va a perder.');
     if(!sure) return;
   }
+  editingCartIndex = null;
   hideModal();
 }
 
@@ -438,6 +453,10 @@ function addToCart(){
     alert('Sube una imagen antes de agregar el producto al carrito.');
     return;
   }
+  if(!document.getElementById('termsCheck').checked){
+    alert('Debes aceptar los Términos y Condiciones antes de agregar el producto al carrito.');
+    return;
+  }
   modalState.notes = document.getElementById('notesInput').value.trim();
 
   let price, meta, name, swatchClass, boxWcm, boxHcm, materialLabel, finalImage, materialId, sizeId;
@@ -469,10 +488,11 @@ function addToCart(){
     finalImage = modalState.image ? exportCroppedImage() : null;
   }
 
-  cart.push({
+  const cartItem = {
     type: modalState.type,
     material: materialLabel,
     materialId, sizeId,
+    orientation: modalState.orientation,
     name, meta,
     notes: modalState.notes,
     qty: modalState.qty,
@@ -480,7 +500,14 @@ function addToCart(){
     image: finalImage,
     swatchClass,
     boxWcm, boxHcm
-  });
+  };
+
+  if(editingCartIndex !== null){
+    cart[editingCartIndex] = cartItem;
+    editingCartIndex = null;
+  } else {
+    cart.push(cartItem);
+  }
 
   renderCart();
   hideModal();
@@ -510,6 +537,14 @@ function removeCartItem(index){
   cart.splice(index, 1);
   renderCart();
   showUndoToast();
+}
+
+function editCartItem(index){
+  const item = cart[index];
+  if(!item) return;
+  editingCartIndex = index;
+  toggleCart(false);
+  openModal(item.type, item);
 }
 
 function showUndoToast(){
@@ -575,6 +610,7 @@ function renderCart(){
       thumb.appendChild(sw);
     }
 
+    const canEdit = item.type === 'sticker' || item.type === 'poster';
     const info = document.createElement('div');
     info.className = 'info';
     info.innerHTML =
@@ -582,7 +618,8 @@ function renderCart(){
       '<div class="meta">' + item.meta + '</div>' +
       (item.notes ? '<div class="notes">"' + escapeHtml(item.notes) + '"</div>' : '') +
       '<div class="row-bottom"><span class="price">' + formatCLP(item.price) + '</span>' +
-      '<button class="remove-btn" onclick="removeCartItem(' + i + ')">Quitar</button></div>';
+      '<span>' + (canEdit ? '<button class="remove-btn" onclick="editCartItem(' + i + ')">Editar</button> · ' : '') +
+      '<button class="remove-btn" onclick="removeCartItem(' + i + ')">Quitar</button></span></div>';
 
     row.appendChild(thumb);
     row.appendChild(info);
@@ -758,10 +795,6 @@ async function confirmOrder(){
   }
   if(checkoutState.delivery === 'envio' && !address){
     alert('Ingresa tu dirección en Valdivia para coordinar el envío.');
-    return;
-  }
-  if(!document.getElementById('termsCheck').checked){
-    alert('Debes confirmar que la imagen que subiste es tuya o tienes permiso para usarla, y que no infringe derechos ni contiene contenido ofensivo.');
     return;
   }
 
