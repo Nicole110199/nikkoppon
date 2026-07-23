@@ -73,7 +73,6 @@ function openModal(type, prefill){
   document.getElementById('notesInput').value = modalState.notes;
   document.getElementById('cropZoom').value = 100;
   document.getElementById('resWarning').style.display = 'none';
-  document.getElementById('termsCheck').checked = false;
   document.getElementById('qtyVal').textContent = modalState.qty;
 
   const isSticker = type === 'sticker';
@@ -453,10 +452,6 @@ function addToCart(){
     alert('Sube una imagen antes de agregar el producto al carrito.');
     return;
   }
-  if(!document.getElementById('termsCheck').checked){
-    alert('Debes aceptar los Términos y Condiciones antes de agregar el producto al carrito.');
-    return;
-  }
   modalState.notes = document.getElementById('notesInput').value.trim();
 
   let price, meta, name, swatchClass, boxWcm, boxHcm, materialLabel, finalImage, materialId, sizeId;
@@ -674,6 +669,10 @@ function goToCheckout(){
   const subtotal = getCartSubtotal();
   if(subtotal < MIN_ORDER_TOTAL){
     alert('La compra mínima es de ' + formatCLP(MIN_ORDER_TOTAL) + '. Te faltan ' + formatCLP(MIN_ORDER_TOTAL - subtotal) + ' para poder continuar.');
+    return;
+  }
+  if(!document.getElementById('termsCheck').checked){
+    alert('Debes aceptar los Términos y Condiciones antes de continuar.');
     return;
   }
   updateCheckoutTotal();
