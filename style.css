@@ -516,7 +516,7 @@ footer.site .word{
 .terms-check input[type="checkbox"]{
   width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--grape);cursor:pointer;
 }
-.terms-check span{font-size:18px;color:var(--ink-soft);line-height:1.5;font-weight:600;}
+.terms-check span{font-size:16px;color:var(--ink-soft);line-height:1.5;font-weight:600;font-family:'Quicksand';}
 .terms-link{color:var(--grape);font-weight:800;text-decoration:underline;}
 .terms-link:hover{color:var(--hotpink-deep);}
 
