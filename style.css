@@ -515,3 +515,42 @@ footer.site .word{
   width:18px;height:18px;flex:none;margin-top:1px;accent-color:var(--grape);cursor:pointer;
 }
 .terms-check span{font-size:11px;color:var(--ink-soft);line-height:1.5;font-weight:600;}
+
+/* ---------- stock disponible ---------- */
+.stock-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;}
+@media(max-width:900px){.stock-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:480px){.stock-grid{grid-template-columns:1fr;}}
+.stock-loading, .stock-empty{color:var(--ink-soft);font-size:14px;font-weight:600;padding:20px 0;grid-column:1/-1;text-align:center;}
+
+.stock-card{
+  background:var(--paper);border-radius:20px;padding:16px;border:2px solid var(--line);
+  cursor:pointer;transition:transform .15s, box-shadow .15s;text-align:left;
+  display:flex;flex-direction:column;gap:10px;position:relative;
+}
+.stock-card:hover{transform:translateY(-4px);box-shadow:0 14px 26px rgba(177,92,255,0.2);}
+.stock-card .stock-thumb{
+  width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;background:var(--cream);
+  display:flex;align-items:center;justify-content:center;
+}
+.stock-card .stock-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.stock-card h3{margin:0;font-size:15px;}
+.stock-card .stock-qty-tag{
+  font-size:11px;font-weight:800;padding:4px 10px;border-radius:8px;display:inline-block;width:fit-content;
+}
+.stock-qty-tag.in-stock{background:var(--mint);color:#1D5C43;}
+.stock-qty-tag.low-stock{background:var(--butter);color:#5C3B00;}
+.stock-qty-tag.out-stock{background:var(--line);color:var(--ink-soft);}
+.stock-card .stock-price{font-family:'Baloo 2';font-weight:700;color:var(--hotpink-deep);font-size:14px;}
+.stock-card.is-out{opacity:0.6;}
+
+/* ---------- galería del modal de stock ---------- */
+.stock-gallery{
+  width:100%;max-width:260px;aspect-ratio:1/1;border-radius:18px;overflow:hidden;
+  background:var(--cream);box-shadow:0 0 0 8px #fff, 0 14px 24px rgba(140,79,209,0.28);
+}
+.stock-gallery img{width:100%;height:100%;object-fit:cover;display:block;}
+.stock-gallery-dots{display:flex;gap:8px;justify-content:center;margin-top:14px;}
+.stock-gallery-dots .dot{
+  width:10px;height:10px;border-radius:50%;background:var(--line);cursor:pointer;border:none;
+}
+.stock-gallery-dots .dot.active{background:var(--grape);}
