@@ -22,9 +22,9 @@
   <div style="background:#fff;border:3px solid #C7A4E8;border-radius:24px;padding:44px 36px;max-width:420px;width:100%;box-shadow:0 16px 32px rgba(140,79,209,0.18);">
     <img src="logo-nikkoppon.png" alt="Logo NIKKOPPON" style="width:110px;height:auto;margin-bottom:18px;filter:drop-shadow(0 6px 14px rgba(140,79,209,0.3));">
     <h1 style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:26px;margin:0 0 12px;background:linear-gradient(90deg,#B15CFF,#FF5DA8);-webkit-background-clip:text;background-clip:text;color:transparent;">¡Volvemos muy pronto!</h1>
-    <p style="font-family:'Quicksand',sans-serif;font-size:15px;line-height:1.6;color:#5E4E7A;font-weight:600;margin:0 0 8px;">Estamos actualizando la tienda para traerte cosas nuevas ᕦ(ò_óˇ)ᕤ</p>
+    <p style="font-family:'Quicksand',sans-serif;font-size:15px;line-height:1.6;color:#5E4E7A;font-weight:600;margin:0 0 8px;">Estamos actualizando la tienda para traerte cosas nuevas.</p>
     <p style="font-family:'Quicksand',sans-serif;font-size:15px;line-height:1.6;color:#5E4E7A;font-weight:600;margin:0 0 8px;">Vuelve a visitarnos en un rato ✦</p>
-    <a href="https://instagram.com/nikkoppon" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;margin-top:18px;color:#8C4FD1;font-weight:700;text-decoration:none;font-family:'Quicksand',sans-serif;font-size:14px;">Mientras tanto, síguenos en Instagram (๑❛ᴗ❛๑)</a>
+    <a href="https://instagram.com/nikkoppon" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;margin-top:18px;color:#8C4FD1;font-weight:700;text-decoration:none;font-family:'Quicksand',sans-serif;font-size:14px;">Mientras tanto, síguenos en Instagram →</a>
   </div>
 </div>
 <script>
@@ -48,6 +48,7 @@
   <div class="header-right">
     <div class="navlinks">
       <span onclick="document.getElementById('como-pedir').scrollIntoView({behavior:'smooth'})">Cómo pedir</span>
+      <span onclick="document.getElementById('terminos').scrollIntoView({behavior:'smooth'})">Términos</span>
       <span onclick="document.getElementById('stock').scrollIntoView({behavior:'smooth'})">Stock</span>
       <span onclick="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})">Catálogo</span>
       <span onclick="document.getElementById('faq').scrollIntoView({behavior:'smooth'})">Preguntas frecuentes</span>
@@ -109,6 +110,47 @@
       <h3>Transfiere y confirma</h3>
       <p>Envía tu comprobante por Instagram dentro de los 30 minutos.</p>
     </div>
+  </div>
+</section>
+
+<section class="block" id="terminos">
+  <div class="section-head">
+    <h2>Términos y cuidados</h2>
+    <p>Léelos antes de personalizar — te ahorran sorpresas después.</p>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary>Sobre las imágenes que subes</summary>
+      <p>La imagen es tu responsabilidad: debe ser tuya o tener permiso para usarla, y no puede contener contenido ofensivo, ilegal o que infrinja derechos de autor de terceros. Nos reservamos el derecho de no fabricar y cancelar (con devolución) cualquier pedido que incumpla esto.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Resolución y calidad de la imagen</summary>
+      <p>Para que se vea nítida al imprimir, recomendamos subir la imagen en la mayor resolución posible. El sitio te avisa automáticamente si la que subiste queda justa para el tamaño elegido — igual puedes continuar, pero el resultado impreso puede verse algo pixelado.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Personalización: acabado, tamaño y recorte</summary>
+      <p>En los stickers, el acabado (mate, tornasol o brillante) y el tamaño elegido son finales una vez agregado el producto al carrito. En los posters, el recorte que ves en el marco (con zoom y rotación) es exactamente lo que se imprime — revísalo bien antes de agregar al carrito, ya que no se hacen ajustes después de confirmado el pedido.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Tiempos de producción</summary>
+      <p>Una vez confirmado el pago, tu pedido se prepara en 2 a 3 días hábiles. Te avisamos por Instagram cuando esté listo para retiro o envío.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Pago y confirmación (30 minutos)</summary>
+      <p>Al confirmar tu pedido tienes 30 minutos para transferir el total y enviar tu comprobante por Instagram. Pasado ese tiempo, el pedido queda sin confirmar y no se fabrica. El monto y los datos de transferencia se muestran en la pantalla de confirmación.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Envíos y retiros</summary>
+      <p>El retiro se coordina por Instagram dentro de Valdivia. El envío a domicilio también es solo dentro de Valdivia, y tiene un costo adicional que se muestra antes de confirmar el pedido.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Cambios y devoluciones</summary>
+      <p>Como cada producto se personaliza con tu propia imagen, no se aceptan cambios ni devoluciones salvo error de fabricación de nuestra parte (por ejemplo, un acabado o tamaño distinto al que pediste).</p>
+    </details>
+    <details class="faq-item">
+      <summary>Tus datos personales</summary>
+      <p>Los datos que dejas en el checkout (nombre, teléfono, Instagram, email, dirección) se usan solo para preparar y coordinar tu pedido — no se comparten con terceros.</p>
+    </details>
   </div>
 </section>
 
@@ -294,6 +336,7 @@
               <button type="button" onclick="document.getElementById('fileInput').click()">Elegir archivo</button>
             </div>
             <div class="res-warning" id="resWarning" style="display:none">⚠ Esta imagen es de baja resolución para el tamaño elegido — podría verse borrosa al imprimir. Si tienes una versión más grande, te recomendamos usarla.</div>
+            <a href="#terminos" class="modal-terms-link" target="_blank">📋 Revisa los términos y cuidados antes de subir tu imagen</a>
           </div>
 
           <div class="field" id="cropControlsField" style="display:none">
@@ -424,10 +467,6 @@
         <span class="label">TOTAL A TRANSFERIR</span>
         <span class="val" id="checkoutTotal">$0</span>
       </div>
-      <label class="terms-check">
-        <input type="checkbox" id="termsCheck">
-        <span>Confirmo que la imagen que subí es mía o tengo permiso para usarla, y que no contiene contenido ofensivo, ilegal o que infrinja derechos de autor.</span>
-      </label>
       <button class="add-btn" style="width:100%;margin-bottom:10px" id="confirmOrderBtn" onclick="confirmOrder()">Confirmar pedido</button>
       <button class="transfer-toggle" onclick="backToCart()">Volver al carrito</button>
     </div>
