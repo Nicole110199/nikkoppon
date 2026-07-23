@@ -563,3 +563,6 @@ footer.site .word{
   width:10px;height:10px;border-radius:50%;background:var(--line);cursor:pointer;border:none;
 }
 .stock-gallery-dots .dot.active{background:var(--grape);}
+
+/* el modal de términos debe verse por encima de cualquier otra ventana o del carrito */
+#termsModalBackdrop{z-index:120;}
