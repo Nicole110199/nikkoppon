@@ -760,6 +760,10 @@ async function confirmOrder(){
     alert('Ingresa tu dirección en Valdivia para coordinar el envío.');
     return;
   }
+  if(!document.getElementById('termsCheck').checked){
+    alert('Debes confirmar que la imagen que subiste es tuya o tienes permiso para usarla, y que no infringe derechos ni contiene contenido ofensivo.');
+    return;
+  }
 
   const btn = document.getElementById('confirmOrderBtn');
   btn.disabled = true;
@@ -989,6 +993,16 @@ function openStockModal(id){
 
 function closeStockModal(){
   document.getElementById('stockModalBackdrop').classList.add('hidden');
+}
+
+/* ---------- modal de términos y condiciones ---------- */
+
+function openTermsModal(){
+  document.getElementById('termsModalBackdrop').classList.remove('hidden');
+}
+
+function closeTermsModal(){
+  document.getElementById('termsModalBackdrop').classList.add('hidden');
 }
 
 function renderStockGallery(){
