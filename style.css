@@ -453,21 +453,6 @@ footer.site .word{
 }
 @media(min-width:721px){.floating-cart-btn{display:none !important;}}
 
-/* ---------- aviso de deshacer al quitar del carrito ---------- */
-.undo-toast{
-  position:fixed;left:50%;bottom:20px;transform:translate(-50%, 120%);
-  display:flex;align-items:center;gap:14px;
-  background:var(--ink);color:#fff;padding:12px 18px;border-radius:16px;
-  font-family:'Quicksand';font-size:13px;font-weight:600;
-  box-shadow:0 10px 24px rgba(0,0,0,0.3);z-index:90;
-  transition:transform .25s ease;
-}
-.undo-toast.show{transform:translate(-50%, 0);}
-.undo-toast button{
-  background:var(--hotpink);color:#fff;border:none;border-radius:10px;
-  padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer;flex:none;
-}
-
 /* ---------- aviso de baja resolución ---------- */
 .res-warning{
   margin-top:10px;background:#FFF3D6;border:2px solid #E8B84B;color:#7A5A0A;
