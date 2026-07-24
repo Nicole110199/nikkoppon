@@ -12,6 +12,58 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKkTuXtlesP_SC
    rechaza pedidos que no vengan de tu propia página. */
 const SHARED_SECRET = 'cree-la-cuenta-fucionando-mi-nombre-con-Nippon';
 
+/* ---------- botón "volver" del celular/navegador ----------
+   Cada vez que se abre el carrito o alguna ventana (modal), se guarda un
+   "paso" en el historial del navegador. Así, si el cliente usa la flechita
+   de volver del celular, en vez de salir de la página se cierra la ventana
+   que tenía abierta (sin guardar cambios si estaba editando algo). */
+
+let overlayHistoryOpen = false;
+let isHandlingPopstate = false;
+
+function anyOverlayVisible(){
+  const cart = document.getElementById('cartDrawer');
+  const modal = document.getElementById('modalBackdrop');
+  const stockModal = document.getElementById('stockModalBackdrop');
+  const termsModal = document.getElementById('termsModalBackdrop');
+  return (cart && cart.classList.contains('open')) ||
+         (modal && !modal.classList.contains('hidden')) ||
+         (stockModal && !stockModal.classList.contains('hidden')) ||
+         (termsModal && !termsModal.classList.contains('hidden'));
+}
+
+function pushOverlayHistory(){
+  if(!overlayHistoryOpen){
+    overlayHistoryOpen = true;
+    history.pushState({ nikkopponOverlay: true }, '');
+  }
+}
+
+// Se llama después de cerrar cualquier ventana; si ya no queda ninguna
+// abierta, "gasta" el paso de historial que se había guardado.
+function consumeOverlayHistory(){
+  if(overlayHistoryOpen && !anyOverlayVisible() && !isHandlingPopstate){
+    overlayHistoryOpen = false;
+    history.back();
+  }
+}
+
+function closeAllOverlaysSilently(){
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('cartBackdrop').classList.remove('open');
+  document.getElementById('modalBackdrop').classList.add('hidden');
+  document.getElementById('stockModalBackdrop').classList.add('hidden');
+  document.getElementById('termsModalBackdrop').classList.add('hidden');
+  updateFloatingCartBtn();
+}
+
+window.addEventListener('popstate', function(){
+  isHandlingPopstate = true;
+  closeAllOverlaysSilently();
+  overlayHistoryOpen = false;
+  isHandlingPopstate = false;
+});
+
 const STICKER_MATERIALS = {
   mate:{ label:'Mate', desc:'Sin reflejos, textura suave al tacto. Ideal para un look minimalista.', basePrice:300, overlayClass:'overlay mate', swatchClass:'swatch-mate' },
   tornasol:{ label:'Tornasol', desc:'Cambia de color según la luz. El más llamativo para destacar tu diseño.', basePrice:500, overlayClass:'overlay tornasol', swatchClass:'swatch-tornasol' },
@@ -103,6 +155,7 @@ function openModal(type, prefill){
   if(addBtn) addBtn.textContent = prefill ? 'Guardar cambios' : 'Agregar al carrito';
 
   document.getElementById('modalBackdrop').classList.remove('hidden');
+  pushOverlayHistory();
 }
 
 function renumberSteps(isSticker){
@@ -114,6 +167,7 @@ function renumberSteps(isSticker){
 
 function hideModal(){
   document.getElementById('modalBackdrop').classList.add('hidden');
+  consumeOverlayHistory();
 }
 
 function closeModal(){
@@ -520,18 +574,18 @@ function showView(name){
 function toggleCart(open){
   document.getElementById('cartDrawer').classList.toggle('open', open);
   document.getElementById('cartBackdrop').classList.toggle('open', open);
-  if(open) showView('cart');
+  if(open){
+    showView('cart');
+    pushOverlayHistory();
+  } else {
+    consumeOverlayHistory();
+  }
   updateFloatingCartBtn();
 }
 
-let lastRemoved = null;
-let undoTimeout = null;
-
 function removeCartItem(index){
-  lastRemoved = { item: cart[index], index };
   cart.splice(index, 1);
   renderCart();
-  showUndoToast();
 }
 
 function editCartItem(index){
@@ -540,24 +594,6 @@ function editCartItem(index){
   editingCartIndex = index;
   toggleCart(false);
   openModal(item.type, item);
-}
-
-function showUndoToast(){
-  document.getElementById('undoToast').classList.add('show');
-  clearTimeout(undoTimeout);
-  undoTimeout = setTimeout(()=>{
-    document.getElementById('undoToast').classList.remove('show');
-    lastRemoved = null;
-  }, 5000);
-}
-
-function undoRemoveItem(){
-  if(!lastRemoved) return;
-  cart.splice(lastRemoved.index, 0, lastRemoved.item);
-  lastRemoved = null;
-  clearTimeout(undoTimeout);
-  document.getElementById('undoToast').classList.remove('show');
-  renderCart();
 }
 
 function updateFloatingCartBtn(){
@@ -1021,20 +1057,24 @@ function openStockModal(id){
   updateStockTotals();
 
   document.getElementById('stockModalBackdrop').classList.remove('hidden');
+  pushOverlayHistory();
 }
 
 function closeStockModal(){
   document.getElementById('stockModalBackdrop').classList.add('hidden');
+  consumeOverlayHistory();
 }
 
 /* ---------- modal de términos y condiciones ---------- */
 
 function openTermsModal(){
   document.getElementById('termsModalBackdrop').classList.remove('hidden');
+  pushOverlayHistory();
 }
 
 function closeTermsModal(){
   document.getElementById('termsModalBackdrop').classList.add('hidden');
+  consumeOverlayHistory();
 }
 
 function renderStockGallery(){
