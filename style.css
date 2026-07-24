@@ -247,18 +247,29 @@ section.block{padding:10px 28px 70px;max-width:1180px;margin:0 auto;}
 .chip:hover{transform:translateY(-1px);}
 
 .chip[data-material="tornasol"].active{
-  background:conic-gradient(from var(--ang), #ff9ec4, #ffe28a, #9be8b4, #9ecbff, #d29eff, #ff9ec4);
-  animation:spin 5s linear infinite;
+  background:linear-gradient(90deg, #ff9ec4, #ffe28a, #9be8b4, #9ecbff, #d29eff, #ff9ec4);
+  background-size:250% 100%;
+  animation:holo-slide 4s linear infinite;
   color:#3a2a5c;text-shadow:0 1px 2px rgba(255,255,255,0.6);
 }
+@keyframes holo-slide{
+  0%{background-position:0% 50%;}
+  100%{background-position:250% 50%;}
+}
 .chip[data-material="brillante"].active{
-  background:linear-gradient(120deg, var(--amber-deep), var(--butter));
+  background:linear-gradient(90deg, var(--amber-deep), var(--butter));
   color:#5C3B00;
+  border-radius:inherit;
 }
 .chip[data-material="brillante"].active::after{
-  content:'';position:absolute;top:0;left:-70%;width:45%;height:100%;
-  background:linear-gradient(100deg, transparent, rgba(255,255,255,0.75), transparent);
-  animation:shine 2.6s ease-in-out infinite;
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.8) 50%, transparent 70%);
+  background-size:250% 100%;
+  animation:shine-slide 2.6s ease-in-out infinite;
+}
+@keyframes shine-slide{
+  0%{background-position:150% 0;}
+  100%{background-position:-50% 0;}
 }
 
 .dropzone{border:3px dashed var(--grape);border-radius:20px;padding:22px;text-align:center;cursor:pointer;background:var(--cream);transition:background .15s;}
