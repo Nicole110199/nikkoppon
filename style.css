@@ -242,9 +242,24 @@ section.block{padding:10px 28px 70px;max-width:1180px;margin:0 auto;}
 .field-label .num{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:50%;background:linear-gradient(135deg, var(--grape), var(--hotpink));color:#fff;font-size:11px;font-weight:800;}
 
 .chip-row{display:flex;gap:10px;flex-wrap:wrap;}
-.chip{padding:9px 16px;border-radius:20px;border:2px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;background:transparent;color:var(--ink);transition:transform .1s;}
+.chip{padding:9px 16px;border-radius:20px;border:2px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;background:transparent;color:var(--ink);transition:transform .1s;position:relative;overflow:hidden;}
 .chip.active{background:linear-gradient(135deg, var(--grape), var(--hotpink));color:#fff;border-color:transparent;}
 .chip:hover{transform:translateY(-1px);}
+
+.chip[data-material="tornasol"].active{
+  background:conic-gradient(from var(--ang), #ff9ec4, #ffe28a, #9be8b4, #9ecbff, #d29eff, #ff9ec4);
+  animation:spin 5s linear infinite;
+  color:#3a2a5c;text-shadow:0 1px 2px rgba(255,255,255,0.6);
+}
+.chip[data-material="brillante"].active{
+  background:linear-gradient(120deg, var(--amber-deep), var(--butter));
+  color:#5C3B00;
+}
+.chip[data-material="brillante"].active::after{
+  content:'';position:absolute;top:0;left:-70%;width:45%;height:100%;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,0.75), transparent);
+  animation:shine 2.6s ease-in-out infinite;
+}
 
 .dropzone{border:3px dashed var(--grape);border-radius:20px;padding:22px;text-align:center;cursor:pointer;background:var(--cream);transition:background .15s;}
 .dropzone.dragging{background:var(--blush);}
