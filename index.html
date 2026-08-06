@@ -363,7 +363,7 @@
         <div class="controls">
 
           <div class="field" id="materialField">
-            <div class="field-label"><span class="num">1</span>Acabado</div>
+            <div class="field-label">Acabado</div>
             <div class="chip-row">
               <button class="chip active" data-material="mate" onclick="setMaterial('mate')">Mate</button>
               <button class="chip" data-material="brillante" onclick="setMaterial('brillante')">Brillante</button>
@@ -372,12 +372,12 @@
           </div>
 
           <div class="field" id="sizeField">
-            <div class="field-label"><span class="num" id="sizeStepNum">2</span>Tamaño</div>
+            <div class="field-label">Tamaño</div>
             <div class="chip-row" id="sizeRow"></div>
           </div>
 
           <div class="field" id="orientationField" style="display:none">
-            <div class="field-label"><span class="num">·</span>Orientación</div>
+            <div class="field-label">Orientación</div>
             <div class="chip-row">
               <button class="chip active" data-orient="vertical" onclick="setOrientation('vertical')">Vertical</button>
               <button class="chip" data-orient="horizontal" onclick="setOrientation('horizontal')">Horizontal</button>
@@ -385,16 +385,15 @@
           </div>
 
           <div class="field">
-            <div class="field-label"><span class="num" id="uploadStepNum">3</span>Sube tu imagen</div>
             <div class="dropzone" id="dropzone">
               <input type="file" id="fileInput" accept="image/*" hidden>
               <div class="dz-icon">✦</div>
-              <div class="dz-main">Arrastra tu imagen aquí</div>
+              <div class="dz-main">Sube o arrastra tu imagen aquí</div>
               <div class="dz-sub">PNG, JPG o WEBP</div>
               <button type="button" onclick="document.getElementById('fileInput').click()">Elegir archivo</button>
             </div>
             <div class="res-warning" id="resWarning" style="display:none">⚠ Esta imagen es de baja resolución para el tamaño elegido — podría verse borrosa al imprimir. Si tienes una versión más grande, te recomendamos usarla.</div>
-            <p class="upload-note">Aceptamos imágenes en PNG o JPG 💛 Procura que sea de buena calidad.Mientras mejor se vea tu imagen, mejor va a quedar tu sticker o poster (•◡•)</p>
+            <p class="upload-note">Aceptamos imágenes en PNG, JPG o WEBP 💛 Procura que sea de buena calidad. Mientras mejor se vea tu imagen, mejor va a quedar tu sticker o poster (•◡•)</p>
           </div>
 
           <div class="field" id="cropControlsField" style="display:none">
@@ -407,12 +406,12 @@
           </div>
 
           <div class="field">
-            <div class="field-label"><span class="num" id="notesStepNum">4</span>Observaciones <span style="font-weight:400;color:var(--ink-soft)">(opcional)</span></div>
+            <div class="field-label">Observaciones <span style="font-weight:400;color:var(--ink-soft)">(opcional)</span></div>
             <textarea class="notes" id="notesInput" placeholder="Ej: recortar dejando un borde blanco, centrar el logo, etc."></textarea>
           </div>
 
           <div class="field" style="margin-bottom:0">
-            <div class="field-label"><span class="num" id="qtyStepNum">5</span>Cantidad</div>
+            <div class="field-label">Cantidad</div>
             <div class="qty-row">
               <button class="qty-btn" onclick="changeQty(-1)">−</button>
               <div class="qty-val" id="qtyVal">1</div>
