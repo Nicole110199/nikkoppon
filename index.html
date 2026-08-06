@@ -28,7 +28,7 @@
   </div>
 </div>
 <script>
-  // ⚠️ ESTA ES LA ÚNICA LÍNEA QUE NECESITAS CAMBIAR (antenimiento):
+  // ⚠️ ESTA ES LA ÚNICA LÍNEA QUE NECESITAS CAMBIAR:
   // true  = el sitio se tapa con el mensaje de mantenimiento
   // false = el sitio se ve normal
   const MAINTENANCE_MODE = false;
@@ -49,7 +49,7 @@
     <div class="navlinks">
       <span onclick="document.getElementById('como-pedir').scrollIntoView({behavior:'smooth'})">Cómo pedir</span>
       <span onclick="document.getElementById('stock').scrollIntoView({behavior:'smooth'})">Stock</span>
-      <span onclick="document.getElementById('postits').scrollIntoView({behavior:'smooth'})">Post-it</span>
+      <span onclick="document.getElementById('postits').scrollIntoView({behavior:'smooth'})">Memo Pad</span>
       <span onclick="document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})">Catálogo</span>
       <span onclick="document.getElementById('faq').scrollIntoView({behavior:'smooth'})">Preguntas frecuentes</span>
     </div>
@@ -125,11 +125,12 @@
 
 <section class="block" id="postits">
   <div class="section-head">
-    <h2>Post-it</h2>
+    <h2>Memo Pad</h2>
     <p>Blocs de 8 cm² con 30 hojas, 5 diseños a elección.</p>
+    <p class="memo-note">📝 Son blocs de notas de papel tradicional (hojas encoladas en la parte superior) — <b>no son notas adhesivas tipo Post-it</b>.</p>
   </div>
   <div class="stock-grid" id="postitGrid">
-    <div class="stock-loading">Cargando post-it...</div>
+    <div class="stock-loading">Cargando memo pad...</div>
   </div>
 </section>
 
@@ -259,14 +260,14 @@
 <div class="modal-backdrop hidden" id="postitModalBackdrop">
   <div class="modal">
     <div class="modal-titlebar">
-      <span class="modal-titlebar-title">POSTIT.EXE</span>
+      <span class="modal-titlebar-title">MEMOPAD.EXE</span>
       <div class="titlebar-controls">
         <button type="button" class="win-btn win-close" onclick="closePostitModal()">×</button>
       </div>
     </div>
 
     <div class="modal-body">
-      <div class="modal-eyebrow">Post-it</div>
+      <div class="modal-eyebrow">Memo Pad</div>
       <h2 id="postitName">Nombre del modelo</h2>
       <p class="modal-desc" id="postitAvailability">Disponibles: 0</p>
 
