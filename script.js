@@ -150,7 +150,6 @@ function openModal(type, prefill){
   }
 
   renderSizeRow();
-  renumberSteps(isSticker);
   buildStage();
   updateModalTotals();
 
@@ -159,13 +158,6 @@ function openModal(type, prefill){
 
   document.getElementById('modalBackdrop').classList.remove('hidden');
   pushOverlayHistory();
-}
-
-function renumberSteps(isSticker){
-  document.getElementById('sizeStepNum').textContent = isSticker ? '2' : '1';
-  document.getElementById('uploadStepNum').textContent = isSticker ? '3' : '2';
-  document.getElementById('notesStepNum').textContent = isSticker ? '4' : '3';
-  document.getElementById('qtyStepNum').textContent = isSticker ? '5' : '4';
 }
 
 function hideModal(){
