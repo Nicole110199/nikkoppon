@@ -1138,7 +1138,7 @@ function addStockToCart(){
   toggleCart(true);
 }
 
-/* ---------- post-it (mismo sistema que stock, otra pestaña del Sheet) ---------- */
+/* ---------- memo pad (mismo sistema que stock, otra pestaña del Sheet llamada "Postits") ---------- */
 
 let postitItems = [];
 let postitModalState = { item: null, qty: 1, galleryIndex: 0 };
@@ -1146,7 +1146,7 @@ let postitModalState = { item: null, qty: 1, galleryIndex: 0 };
 function loadPostits(){
   const grid = document.getElementById('postitGrid');
   if(!APPS_SCRIPT_URL){
-    grid.innerHTML = '<div class="stock-empty">Los post-it todavía no están conectados.</div>';
+    grid.innerHTML = '<div class="stock-empty">Los memo pad todavía no están conectados.</div>';
     return;
   }
 
@@ -1154,23 +1154,23 @@ function loadPostits(){
     .then(res => res.json())
     .then(data => {
       if(data && data.error){
-        console.error('Error del Apps Script al leer los post-it:', data.error);
-        grid.innerHTML = '<div class="stock-empty">Error leyendo los post-it: ' + escapeHtml(data.error) + '</div>';
+        console.error('Error del Apps Script al leer los memo pad:', data.error);
+        grid.innerHTML = '<div class="stock-empty">Error leyendo los memo pad: ' + escapeHtml(data.error) + '</div>';
         return;
       }
       postitItems = (data && data.items) || [];
       renderPostitGrid();
     })
     .catch(err => {
-      console.error('Error cargando los post-it:', err);
-      grid.innerHTML = '<div class="stock-empty">No se pudo cargar los post-it. Intenta recargar la página.</div>';
+      console.error('Error cargando los memo pad:', err);
+      grid.innerHTML = '<div class="stock-empty">No se pudo cargar los memo pad. Intenta recargar la página.</div>';
     });
 }
 
 function renderPostitGrid(){
   const grid = document.getElementById('postitGrid');
   if(postitItems.length === 0){
-    grid.innerHTML = '<div class="stock-empty">Por ahora no hay post-it disponibles.</div>';
+    grid.innerHTML = '<div class="stock-empty">Por ahora no hay memo pad disponibles.</div>';
     return;
   }
 
@@ -1257,7 +1257,7 @@ function addPostitToCart(){
     type: 'postit',
     stockId: item.id,
     material: '',
-    name: 'Post-it ' + item.name,
+    name: 'Memo Pad ' + item.name,
     meta: item.size || '8 cm² · 30 hojas',
     notes: '',
     qty: postitModalState.qty,
