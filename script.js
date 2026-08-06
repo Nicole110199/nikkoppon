@@ -685,6 +685,14 @@ function getCartSubtotal(){
   return cart.reduce((sum, item) => sum + item.price, 0);
 }
 
+// Solo cuenta lo personalizado (sticker/poster) — el stock y los memo pad
+// no tienen compra mínima, ya que no se fabrican especialmente por pedido.
+function getPersonalizedSubtotal(){
+  return cart
+    .filter(item => item.type === 'sticker' || item.type === 'poster')
+    .reduce((sum, item) => sum + item.price, 0);
+}
+
 function updateCheckoutTotal(){
   const subtotal = getCartSubtotal();
   const fee = checkoutState.delivery === 'envio' ? DELIVERY_FEE : 0;
@@ -705,9 +713,9 @@ function goToCheckout(){
     alert('Tu carrito está vacío. Agrega al menos un producto antes de continuar.');
     return;
   }
-  const subtotal = getCartSubtotal();
-  if(subtotal < MIN_ORDER_TOTAL){
-    alert('La compra mínima es de ' + formatCLP(MIN_ORDER_TOTAL) + '. Te faltan ' + formatCLP(MIN_ORDER_TOTAL - subtotal) + ' para poder continuar.');
+  const personalizedSubtotal = getPersonalizedSubtotal();
+  if(personalizedSubtotal > 0 && personalizedSubtotal < MIN_ORDER_TOTAL){
+    alert('La compra mínima para stickers/posters personalizados es de ' + formatCLP(MIN_ORDER_TOTAL) + '. Te faltan ' + formatCLP(MIN_ORDER_TOTAL - personalizedSubtotal) + ' en productos personalizados para poder continuar.');
     return;
   }
   if(!document.getElementById('termsCheck').checked){
@@ -813,8 +821,9 @@ async function checkLiveStockAvailability(){
 }
 
 async function confirmOrder(){
-  if(getCartSubtotal() < MIN_ORDER_TOTAL){
-    alert('La compra mínima es de ' + formatCLP(MIN_ORDER_TOTAL) + '.');
+  const personalizedSubtotal = getPersonalizedSubtotal();
+  if(personalizedSubtotal > 0 && personalizedSubtotal < MIN_ORDER_TOTAL){
+    alert('La compra mínima para stickers/posters personalizados es de ' + formatCLP(MIN_ORDER_TOTAL) + '.');
     showView('cart');
     return;
   }
