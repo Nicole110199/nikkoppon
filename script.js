@@ -25,10 +25,12 @@ function anyOverlayVisible(){
   const cart = document.getElementById('cartDrawer');
   const modal = document.getElementById('modalBackdrop');
   const stockModal = document.getElementById('stockModalBackdrop');
+  const postitModal = document.getElementById('postitModalBackdrop');
   const termsModal = document.getElementById('termsModalBackdrop');
   return (cart && cart.classList.contains('open')) ||
          (modal && !modal.classList.contains('hidden')) ||
          (stockModal && !stockModal.classList.contains('hidden')) ||
+         (postitModal && !postitModal.classList.contains('hidden')) ||
          (termsModal && !termsModal.classList.contains('hidden'));
 }
 
@@ -53,6 +55,7 @@ function closeAllOverlaysSilently(){
   document.getElementById('cartBackdrop').classList.remove('open');
   document.getElementById('modalBackdrop').classList.add('hidden');
   document.getElementById('stockModalBackdrop').classList.add('hidden');
+  document.getElementById('postitModalBackdrop').classList.add('hidden');
   document.getElementById('termsModalBackdrop').classList.add('hidden');
   updateFloatingCartBtn();
 }
@@ -1135,6 +1138,139 @@ function addStockToCart(){
   toggleCart(true);
 }
 
+/* ---------- post-it (mismo sistema que stock, otra pestaña del Sheet) ---------- */
+
+let postitItems = [];
+let postitModalState = { item: null, qty: 1, galleryIndex: 0 };
+
+function loadPostits(){
+  const grid = document.getElementById('postitGrid');
+  if(!APPS_SCRIPT_URL){
+    grid.innerHTML = '<div class="stock-empty">Los post-it todavía no están conectados.</div>';
+    return;
+  }
+
+  fetch(APPS_SCRIPT_URL + '?action=postits')
+    .then(res => res.json())
+    .then(data => {
+      if(data && data.error){
+        console.error('Error del Apps Script al leer los post-it:', data.error);
+        grid.innerHTML = '<div class="stock-empty">Error leyendo los post-it: ' + escapeHtml(data.error) + '</div>';
+        return;
+      }
+      postitItems = (data && data.items) || [];
+      renderPostitGrid();
+    })
+    .catch(err => {
+      console.error('Error cargando los post-it:', err);
+      grid.innerHTML = '<div class="stock-empty">No se pudo cargar los post-it. Intenta recargar la página.</div>';
+    });
+}
+
+function renderPostitGrid(){
+  const grid = document.getElementById('postitGrid');
+  if(postitItems.length === 0){
+    grid.innerHTML = '<div class="stock-empty">Por ahora no hay post-it disponibles.</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  postitItems.forEach(item=>{
+    const card = document.createElement('button');
+    card.className = 'stock-card';
+    card.onclick = () => openPostitModal(item.id);
+
+    card.innerHTML =
+      '<div class="stock-thumb"><img src="' + (item.image1 || '') + '" alt="' + escapeHtml(item.name || '') + '"></div>' +
+      '<h3>' + escapeHtml(item.name || '') + '</h3>' +
+      '<span class="stock-qty-tag in-stock">Bajo pedido</span>' +
+      '<span class="stock-price">' + formatCLP(Number(item.price) || 0) + '</span>';
+
+    grid.appendChild(card);
+  });
+}
+
+function openPostitModal(id){
+  const item = postitItems.find(s => s.id === id);
+  if(!item) return;
+
+  postitModalState = { item, qty: 1, galleryIndex: 0 };
+
+  document.getElementById('postitName').textContent = item.name || '';
+  document.getElementById('postitSize').textContent = item.size || '8 cm² · 30 hojas';
+  document.getElementById('postitQtyVal').textContent = 1;
+  document.getElementById('postitAvailability').textContent = 'Se hace bajo pedido';
+
+  const addBtn = document.getElementById('postitAddBtn');
+  addBtn.disabled = false;
+  addBtn.textContent = 'Agregar al carrito';
+
+  renderPostitGallery();
+  updatePostitTotals();
+
+  document.getElementById('postitModalBackdrop').classList.remove('hidden');
+  pushOverlayHistory();
+}
+
+function closePostitModal(){
+  document.getElementById('postitModalBackdrop').classList.add('hidden');
+  consumeOverlayHistory();
+}
+
+function renderPostitGallery(){
+  const item = postitModalState.item;
+  const images = [item.image1, item.image2].filter(Boolean);
+  if(images.length === 0) images.push('');
+
+  const idx = postitModalState.galleryIndex % images.length;
+  document.getElementById('postitGalleryImg').src = images[idx];
+  document.getElementById('postitGalleryImg').alt = item.name || '';
+
+  const dots = document.getElementById('postitGalleryDots');
+  dots.innerHTML = '';
+  if(images.length > 1){
+    images.forEach((img, i)=>{
+      const dot = document.createElement('button');
+      dot.className = 'dot' + (i === idx ? ' active' : '');
+      dot.onclick = () => { postitModalState.galleryIndex = i; renderPostitGallery(); };
+      dots.appendChild(dot);
+    });
+  }
+}
+
+function changePostitQty(delta){
+  postitModalState.qty = Math.max(1, Math.min(50, postitModalState.qty + delta));
+  document.getElementById('postitQtyVal').textContent = postitModalState.qty;
+  updatePostitTotals();
+}
+
+function updatePostitTotals(){
+  const price = (Number(postitModalState.item.price) || 0) * postitModalState.qty;
+  document.getElementById('postitPriceVal').textContent = formatCLP(price);
+}
+
+function addPostitToCart(){
+  const item = postitModalState.item;
+  const images = [item.image1, item.image2].filter(Boolean);
+
+  cart.push({
+    type: 'postit',
+    stockId: item.id,
+    material: '',
+    name: 'Post-it ' + item.name,
+    meta: item.size || '8 cm² · 30 hojas',
+    notes: '',
+    qty: postitModalState.qty,
+    price: (Number(item.price) || 0) * postitModalState.qty,
+    image: images[0] || null,
+    swatchClass: 'swatch-mate'
+  });
+
+  renderCart();
+  closePostitModal();
+  toggleCart(true);
+}
+
 
 
 document.addEventListener('DOMContentLoaded', ()=>{
@@ -1143,6 +1279,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   initGlobalSparkles();
   initReceiptMeta();
   loadStock();
+  loadPostits();
 
   // Listeners globales del recortador de poster (se agregan una sola vez;
   // cropDrag.active controla si realmente hay que mover algo)
