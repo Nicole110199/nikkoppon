@@ -154,6 +154,12 @@ section.block{padding:10px 28px 70px;max-width:1180px;margin:0 auto;}
   border:2px solid #D68A0F;
 }
 
+.memo-note{
+  margin-top:10px;font-size:13px;color:var(--ink-soft);font-weight:600;line-height:1.5;
+  max-width:520px;
+}
+.memo-note b{color:var(--ink);}
+
 /* ---------- product cards ---------- */
 .products-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;}
 .products-grid.posters{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}
