@@ -84,6 +84,12 @@ const POSTER_SIZES = [
   {id:'10x15', label:'10 x 15 cm', price:700, wCm:10, hCm:15}
 ];
 
+const BOOKMARK_MATERIALS = {
+  normal:{ label:'Normal', desc:'Acabado clásico, resistente para el uso diario.', basePrice:1250, swatchClass:'swatch-mate' },
+  tornasol:{ label:'Tornasol', desc:'Cambia de color según la luz. Un marcapáginas que destaca.', basePrice:1750, swatchClass:'swatch-tornasol' }
+};
+const BOOKMARK_SIZE = { wCm:5, hCm:20 }; // tamaño único, sin variación
+
 const FRAME_LONG_PX = 220;   // tamaño del marco de recorte en pantalla
 const CROP_EXPORT_LONG_PX = 1600; // resolución del recorte final exportado
 
@@ -114,10 +120,14 @@ let editingCartIndex = null;
 function openModal(type, prefill){
   if(!prefill) editingCartIndex = null;
 
+  const isSticker = type === 'sticker';
+  const isPoster = type === 'poster';
+  const isBookmark = type === 'bookmark';
+
   modalState = {
     type,
-    material: (prefill && prefill.materialId) || 'mate',
-    sizeId: (prefill && prefill.sizeId) || (type==='sticker' ? 'm' : 'a4'),
+    material: (prefill && prefill.materialId) || (isBookmark ? 'normal' : 'mate'),
+    sizeId: (prefill && prefill.sizeId) || (isSticker ? 'm' : (isPoster ? 'a4' : null)),
     qty: (prefill && prefill.qty) || 1,
     image: (prefill && prefill.image) || null,
     notes: (prefill && prefill.notes) || '',
@@ -130,18 +140,22 @@ function openModal(type, prefill){
   document.getElementById('resWarning').style.display = 'none';
   document.getElementById('qtyVal').textContent = modalState.qty;
 
-  const isSticker = type === 'sticker';
-  document.getElementById('materialField').style.display = isSticker ? '' : 'none';
-  document.getElementById('orientationField').style.display = isSticker ? 'none' : '';
+  document.getElementById('materialField').style.display = (isSticker || isBookmark) ? '' : 'none';
+  document.getElementById('sizeField').style.display = isBookmark ? 'none' : '';
+  document.getElementById('orientationField').style.display = isPoster ? '' : 'none';
   document.getElementById('cropControlsField').style.display = 'none';
-  document.getElementById('modalWindowTitle').textContent = isSticker ? 'STICKER.EXE' : 'POSTER.EXE';
+  document.getElementById('modalWindowTitle').textContent = isSticker ? 'STICKER.EXE' : (isPoster ? 'POSTER.EXE' : 'MARCAPAGINAS.EXE');
 
   if(isSticker){
     const mat = STICKER_MATERIALS[modalState.material];
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Sticker';
     document.getElementById('modalDesc').textContent = mat.desc;
-    document.querySelectorAll('#materialField .chip').forEach(c=>c.classList.toggle('active', c.dataset.material===modalState.material));
+  } else if(isBookmark){
+    const mat = BOOKMARK_MATERIALS[modalState.material];
+    document.getElementById('modalEyebrow').textContent = 'Personalizable';
+    document.getElementById('modalTitle').textContent = 'Marcapáginas';
+    document.getElementById('modalDesc').textContent = mat.desc + ' Tamaño único: 5 x 20 cm.';
   } else {
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Poster';
@@ -149,6 +163,7 @@ function openModal(type, prefill){
     document.querySelectorAll('#orientationField .chip').forEach(c=>c.classList.toggle('active', c.dataset.orient===modalState.orientation));
   }
 
+  renderMaterialRow();
   renderSizeRow();
   buildStage();
   updateModalTotals();
@@ -174,6 +189,26 @@ function closeModal(){
   hideModal();
 }
 
+function getMaterialsForType(){
+  return modalState.type === 'bookmark' ? BOOKMARK_MATERIALS : STICKER_MATERIALS;
+}
+
+function renderMaterialRow(){
+  const row = document.getElementById('materialRow');
+  if(!row) return;
+  row.innerHTML = '';
+  const materials = getMaterialsForType();
+  const activeId = modalState.material;
+  Object.keys(materials).forEach(id=>{
+    const b = document.createElement('button');
+    b.className = 'chip' + (id===activeId ? ' active' : '');
+    b.textContent = materials[id].label;
+    b.dataset.material = id;
+    b.onclick = ()=>setMaterial(id);
+    row.appendChild(b);
+  });
+}
+
 function renderSizeRow(){
   const row = document.getElementById('sizeRow');
   row.innerHTML = '';
@@ -192,7 +227,7 @@ function renderSizeRow(){
 function setMaterial(materialId){
   modalState.material = materialId;
   document.querySelectorAll('#materialField .chip').forEach(c=>c.classList.toggle('active', c.dataset.material===materialId));
-  document.getElementById('modalDesc').textContent = STICKER_MATERIALS[materialId].desc;
+  document.getElementById('modalDesc').textContent = getMaterialsForType()[materialId].desc;
   buildStage();
   updateModalTotals();
 }
@@ -228,11 +263,18 @@ function changeQty(delta){
 /* ---------- marco de recorte del poster (tamaño real en cm y px en pantalla) ---------- */
 
 function computeFrameDims(){
-  const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
-  const longSide = Math.max(size.wCm, size.hCm);
-  const shortSide = Math.min(size.wCm, size.hCm);
-  const wCm = modalState.orientation === 'horizontal' ? longSide : shortSide;
-  const hCm = modalState.orientation === 'horizontal' ? shortSide : longSide;
+  let wCm, hCm;
+
+  if(modalState.type === 'bookmark'){
+    wCm = BOOKMARK_SIZE.wCm;
+    hCm = BOOKMARK_SIZE.hCm;
+  } else {
+    const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
+    const longSide = Math.max(size.wCm, size.hCm);
+    const shortSide = Math.min(size.wCm, size.hCm);
+    wCm = modalState.orientation === 'horizontal' ? longSide : shortSide;
+    hCm = modalState.orientation === 'horizontal' ? shortSide : longSide;
+  }
 
   let wPx, hPx;
   if(wCm >= hCm){ wPx = FRAME_LONG_PX; hPx = FRAME_LONG_PX * hCm / wCm; }
@@ -484,6 +526,9 @@ function updateModalTotals(){
     const size = STICKER_SIZES.find(s=>s.id===modalState.sizeId) || STICKER_SIZES[1];
     price = STICKER_MATERIALS[modalState.material].basePrice * size.mult * modalState.qty;
     sizeLabel = size.label;
+  } else if(modalState.type === 'bookmark'){
+    price = BOOKMARK_MATERIALS[modalState.material].basePrice * modalState.qty;
+    sizeLabel = '5 x 20 cm';
   } else {
     const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
     const frameDims = computeFrameDims();
@@ -492,9 +537,14 @@ function updateModalTotals(){
   }
   document.getElementById('priceVal').textContent = formatCLP(price);
 
-  const tag = modalState.type === 'sticker'
-    ? 'Sticker · ' + STICKER_MATERIALS[modalState.material].label + ' · ' + sizeLabel
-    : 'Poster · ' + sizeLabel + ' · ' + (modalState.orientation === 'horizontal' ? 'Horizontal' : 'Vertical');
+  let tag;
+  if(modalState.type === 'sticker'){
+    tag = 'Sticker · ' + STICKER_MATERIALS[modalState.material].label + ' · ' + sizeLabel;
+  } else if(modalState.type === 'bookmark'){
+    tag = 'Marcapáginas · ' + BOOKMARK_MATERIALS[modalState.material].label + ' · ' + sizeLabel;
+  } else {
+    tag = 'Poster · ' + sizeLabel + ' · ' + (modalState.orientation === 'horizontal' ? 'Horizontal' : 'Vertical');
+  }
   document.getElementById('previewTag').textContent = tag;
 }
 
@@ -503,7 +553,7 @@ function handleFile(file){
   const reader = new FileReader();
   reader.onload = (e)=>{
     modalState.image = e.target.result;
-    if(modalState.type === 'poster'){
+    if(modalState.type === 'poster' || modalState.type === 'bookmark'){
       modalState.crop = { rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 };
       document.getElementById('cropZoom').value = 100;
     }
@@ -569,6 +619,18 @@ function addToCart(){
     materialId = modalState.material;
     sizeId = size.id;
     finalImage = modalState.image;
+  } else if(modalState.type === 'bookmark'){
+    const mat = BOOKMARK_MATERIALS[modalState.material];
+    price = mat.basePrice * modalState.qty;
+    meta = mat.label + ' · 5 x 20 cm';
+    name = 'Marcapáginas';
+    swatchClass = mat.swatchClass;
+    boxWcm = BOOKMARK_SIZE.wCm;
+    boxHcm = BOOKMARK_SIZE.hCm;
+    materialLabel = mat.label;
+    materialId = modalState.material;
+    sizeId = null;
+    finalImage = modalState.image ? exportCroppedImage() : null;
   } else {
     const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
     const frameDims = computeFrameDims();
@@ -688,7 +750,7 @@ function renderCart(){
       thumb.appendChild(sw);
     }
 
-    const canEdit = item.type === 'sticker' || item.type === 'poster';
+    const canEdit = item.type === 'sticker' || item.type === 'poster' || item.type === 'bookmark';
     const info = document.createElement('div');
     info.className = 'info';
     info.innerHTML =
@@ -733,7 +795,7 @@ function getCartSubtotal(){
 // no tienen compra mínima, ya que no se fabrican especialmente por pedido.
 function getPersonalizedSubtotal(){
   return cart
-    .filter(item => item.type === 'sticker' || item.type === 'poster')
+    .filter(item => item.type === 'sticker' || item.type === 'poster' || item.type === 'bookmark')
     .reduce((sum, item) => sum + item.price, 0);
 }
 
