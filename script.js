@@ -264,6 +264,7 @@ function buildStage(){
         '<div class="dz-icon">✦</div>' +
         '<div class="dz-main">Sube o arrastra tu imagen aquí</div>' +
         '<div class="dz-sub">PNG, JPG o WEBP</div>' +
+        '<button type="button" class="dz-btn" id="dzButton">Elegir archivo</button>' +
       '</div>' +
       '<img class="crop-image" id="artworkImg" style="display:none">';
     stage.appendChild(frame);
@@ -297,6 +298,14 @@ function initStagePreviewDropzone(el){
     const file = e.dataTransfer.files[0];
     handleFile(file);
   });
+
+  const dzButton = el.querySelector('#dzButton');
+  if(dzButton){
+    dzButton.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      fileInput.click();
+    });
+  }
 }
 
 function renderStageInner(){
@@ -305,6 +314,7 @@ function renderStageInner(){
            '<div class="dz-icon">✦</div>' +
            '<div class="dz-main">Sube o arrastra tu imagen aquí</div>' +
            '<div class="dz-sub">PNG, JPG o WEBP</div>' +
+           '<button type="button" class="dz-btn" id="dzButton">Elegir archivo</button>' +
          '</div>' +
          '<img class="artwork" id="artworkImg" style="display:none">' +
          '<div class="' + overlay + '" id="stageOverlay"></div>';
