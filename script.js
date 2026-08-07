@@ -250,6 +250,7 @@ function buildStage(){
     wrap.className = 'sticker-stage';
     wrap.innerHTML = renderStageInner();
     stage.appendChild(wrap);
+    initStagePreviewDropzone(wrap);
   } else {
     const frameDims = computeFrameDims();
     const frame = document.createElement('div');
@@ -259,18 +260,52 @@ function buildStage(){
     frame.style.height = frameDims.hPx + 'px';
     frame.style.borderRadius = '6px';
     frame.innerHTML =
-      '<div class="placeholder" id="placeholder"><div class="txt">Sube tu imagen</div></div>' +
+      '<div class="placeholder upload-placeholder" id="placeholder">' +
+        '<div class="dz-icon">✦</div>' +
+        '<div class="dz-main">Sube o arrastra tu imagen aquí</div>' +
+        '<div class="dz-sub">PNG, JPG o WEBP</div>' +
+      '</div>' +
       '<img class="crop-image" id="artworkImg" style="display:none">';
     stage.appendChild(frame);
     frame.addEventListener('mousedown', startCropDrag);
     frame.addEventListener('touchstart', startCropDrag, {passive:false});
+    initStagePreviewDropzone(frame);
   }
   refreshStageContent();
 }
 
+// Hace que la vista previa misma (sticker o poster) sea la zona donde se
+// puede hacer clic o arrastrar una imagen — así el cliente sube la imagen
+// justo donde va a ver el resultado, en vez de un recuadro aparte.
+function initStagePreviewDropzone(el){
+  const fileInput = document.getElementById('fileInput');
+
+  el.addEventListener('click', (e)=>{
+    if(modalState.image) return; // ya hay imagen: se cambia con el botón "Cambiar imagen"
+    fileInput.click();
+  });
+  el.addEventListener('dragover', (e)=>{
+    e.preventDefault();
+    if(!modalState.image) el.classList.add('dragging');
+  });
+  el.addEventListener('dragleave', ()=>{
+    el.classList.remove('dragging');
+  });
+  el.addEventListener('drop', (e)=>{
+    e.preventDefault();
+    el.classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    handleFile(file);
+  });
+}
+
 function renderStageInner(){
   const overlay = STICKER_MATERIALS[modalState.material].overlayClass;
-  return '<div class="placeholder" id="placeholder"><div class="txt">Sube tu imagen</div></div>' +
+  return '<div class="placeholder upload-placeholder" id="placeholder">' +
+           '<div class="dz-icon">✦</div>' +
+           '<div class="dz-main">Sube o arrastra tu imagen aquí</div>' +
+           '<div class="dz-sub">PNG, JPG o WEBP</div>' +
+         '</div>' +
          '<img class="artwork" id="artworkImg" style="display:none">' +
          '<div class="' + overlay + '" id="stageOverlay"></div>';
 }
@@ -279,6 +314,9 @@ function refreshStageContent(){
   const placeholder = document.getElementById('placeholder');
   const img = document.getElementById('artworkImg');
   if(!placeholder || !img) return;
+
+  const changeBtn = document.getElementById('changeImageBtn');
+  if(changeBtn) changeBtn.style.display = modalState.image ? 'inline-flex' : 'none';
 
   if(modalState.type === 'sticker'){
     const stickerWrap = document.querySelector('.sticker-stage');
@@ -297,15 +335,18 @@ function refreshStageContent(){
 
   // poster: recortador interactivo
   document.getElementById('cropControlsField').style.display = modalState.image ? '' : 'none';
+  const cropFrame = document.getElementById('cropFrame');
 
   if(!modalState.image){
     placeholder.style.display = 'flex';
     img.style.display = 'none';
+    if(cropFrame) cropFrame.classList.add('is-empty');
     return;
   }
 
   placeholder.style.display = 'none';
   img.style.display = 'block';
+  if(cropFrame) cropFrame.classList.remove('is-empty');
 
   if(img.src !== modalState.image || !modalState.crop.natW){
     img.onload = () => {
@@ -359,6 +400,7 @@ function onZoomChange(val){
 }
 
 function startCropDrag(e){
+  if(!modalState.image) return; // sin imagen todavía no hay nada que recortar/mover
   cropDrag.active = true;
   const frame = document.getElementById('cropFrame');
   if(frame) frame.classList.add('dragging');
@@ -915,25 +957,7 @@ function closeConfirmation(){
 /* ---------- upload dropzone (compartido por el modal) ---------- */
 
 function initUploader(){
-  const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('fileInput');
-
-  dropzone.addEventListener('click', (e)=>{
-    if(e.target.tagName !== 'BUTTON') fileInput.click();
-  });
-  dropzone.addEventListener('dragover', (e)=>{
-    e.preventDefault();
-    dropzone.classList.add('dragging');
-  });
-  dropzone.addEventListener('dragleave', ()=>{
-    dropzone.classList.remove('dragging');
-  });
-  dropzone.addEventListener('drop', (e)=>{
-    e.preventDefault();
-    dropzone.classList.remove('dragging');
-    const file = e.dataTransfer.files[0];
-    handleFile(file);
-  });
   fileInput.addEventListener('change', (e)=>{
     handleFile(e.target.files[0]);
   });
