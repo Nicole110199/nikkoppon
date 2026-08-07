@@ -159,6 +159,17 @@
       </div>
     </button>
 
+    <button class="product-card" onclick="openModal('bookmark')">
+      <div class="folder-tab" style="background:var(--lilac-deep)"></div>
+      <div class="swatch-preview"><img src="sticker-cover.png" alt="Marcapáginas"></div>
+      <div class="eyebrow-label">Personalizable</div>
+      <h3>Marcapáginas</h3>
+      <p class="desc">Tamaño único 5 x 20 cm — normal o tornasol, sube tu imagen y listo.</p>
+      <div class="price-pill">
+        <div class="price">desde $1.250</div>
+      </div>
+    </button>
+
   </div>
 </section>
 
@@ -364,11 +375,7 @@
 
           <div class="field" id="materialField">
             <div class="field-label">Acabado</div>
-            <div class="chip-row">
-              <button class="chip active" data-material="mate" onclick="setMaterial('mate')">Mate</button>
-              <button class="chip" data-material="brillante" onclick="setMaterial('brillante')">Brillante</button>
-              <button class="chip" data-material="tornasol" onclick="setMaterial('tornasol')">Tornasol</button>
-            </div>
+            <div class="chip-row" id="materialRow"></div>
           </div>
 
           <div class="field" id="sizeField">
