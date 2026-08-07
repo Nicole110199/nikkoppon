@@ -341,6 +341,12 @@ textarea.notes:focus{outline:none;border-color:var(--grape);}
 .upload-placeholder .dz-icon{font-size:26px;margin-bottom:2px;color:var(--grape);}
 .upload-placeholder .dz-main{font-family:'Baloo 2';font-weight:700;font-size:14px;color:var(--ink);}
 .upload-placeholder .dz-sub{font-size:12px;color:var(--ink-soft);}
+.upload-placeholder .dz-btn{
+  margin-top:12px;font-weight:700;font-size:13px;
+  background:linear-gradient(135deg, var(--grape), var(--hotpink));color:#fff;
+  border:none;border-radius:20px;padding:9px 20px;cursor:pointer;
+  box-shadow:0 3px 0 var(--hotpink-deep);
+}
 .change-image-btn{
   margin-top:14px;font-family:'Baloo 2';font-weight:700;font-size:13px;
   background:var(--paper);color:var(--grape);border:2px solid var(--grape);
