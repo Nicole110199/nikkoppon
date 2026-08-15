@@ -414,7 +414,8 @@ function refreshStageContent(){
 
 function renderCropTransform(){
   const img = document.getElementById('artworkImg');
-  if(!img || modalState.type !== 'poster' || !modalState.crop.natW) return;
+  const isCropType = modalState.type === 'poster' || modalState.type === 'bookmark';
+  if(!img || !isCropType || !modalState.crop.natW) return;
 
   const frameDims = computeFrameDims();
   const rot = modalState.crop.rotation;
