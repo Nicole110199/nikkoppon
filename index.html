@@ -116,6 +116,11 @@
   <div class="section-head">
     <h2>Stock disponible</h2>
   </div>
+  <div class="chip-row" id="stockFinishFilter" style="margin-bottom:18px">
+    <button class="chip active" data-finish="Mate" onclick="setStockFinishFilter('Mate')">Mate</button>
+    <button class="chip" data-finish="Brillante" onclick="setStockFinishFilter('Brillante')">Brillante</button>
+    <button class="chip" data-finish="Tornasol" onclick="setStockFinishFilter('Tornasol')">Tornasol</button>
+  </div>
   <div class="stock-grid" id="stockGrid">
     <div class="stock-loading">Cargando stock...</div>
   </div>
@@ -401,7 +406,9 @@
             <div class="field-label">Ajustar recorte</div>
             <div class="crop-controls">
               <button type="button" class="crop-btn" onclick="rotateCropImage()">⟳ Rotar</button>
+              <button type="button" class="zoom-btn" onclick="stepZoom(-10)">−</button>
               <input type="range" id="cropZoom" min="100" max="300" value="100" oninput="onZoomChange(this.value)">
+              <button type="button" class="zoom-btn" onclick="stepZoom(10)">+</button>
             </div>
             <div class="hint">Arrastra la imagen dentro del marco para acomodarla.</div>
           </div>
