@@ -3,7 +3,7 @@ const IG_USERNAME = 'nikkoppon';
 
 /* ⚠️ Pega aquí la URL de tu Google Apps Script publicado como "Aplicación web"
    (ver instrucciones en google-apps-script.gs). Déjalo vacío ('') si todavía
-   no lo configuras — el resto del sitio funciona igual sin esto.. */
+   no lo configuras — el resto del sitio funciona igual sin esto. */
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKkTuXtlesP_SCjCmu7BYQlvaT2VqXkeaed5-pIz3RLq1U2aypAgqUyYErlC-60-rxoA/exec';
 
 /* ⚠️ Cambia esto por cualquier texto largo y difícil de adivinar (por ejemplo,
@@ -58,6 +58,22 @@ function closeAllOverlaysSilently(){
   document.getElementById('postitModalBackdrop').classList.add('hidden');
   document.getElementById('termsModalBackdrop').classList.add('hidden');
   updateFloatingCartBtn();
+}
+
+// Cierra el carrito SIN tocar el historial (a diferencia de toggleCart(false)).
+// Se usa cuando se va a abrir otra ventana inmediatamente después (por
+// ejemplo, al editar un producto), para no pisar el paso de "volver" que
+// ya estaba guardado — eso evita que la ventana nueva se cierre sola.
+function hideCartSilently(){
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('cartBackdrop').classList.remove('open');
+  updateFloatingCartBtn();
+}
+
+// Igual que arriba, pero para cerrar un modal (personalización, stock o
+// memo pad) sin tocar el historial, justo antes de abrir el carrito.
+function hideOverlaySilently(id){
+  document.getElementById(id).classList.add('hidden');
 }
 
 window.addEventListener('popstate', function(){
@@ -676,7 +692,7 @@ function addToCart(){
   }
 
   renderCart();
-  hideModal();
+  hideOverlaySilently('modalBackdrop');
   toggleCart(true);
 }
 
@@ -709,7 +725,7 @@ function editCartItem(index){
   const item = cart[index];
   if(!item) return;
   editingCartIndex = index;
-  toggleCart(false);
+  hideCartSilently();
   openModal(item.type, item);
 }
 
@@ -815,7 +831,7 @@ function escapeHtml(str){
 const DELIVERY_FEE = 1500;
 
 /* ⚠️ Monto mínimo de compra (sin contar el envío) */
-const MIN_ORDER_TOTAL = 2000;
+const MIN_ORDER_TOTAL = 1000;
 
 let checkoutState = { delivery: 'retiro' };
 let countdownInterval = null;
@@ -1280,7 +1296,7 @@ function addStockToCart(){
   });
 
   renderCart();
-  closeStockModal();
+  hideOverlaySilently('stockModalBackdrop');
   toggleCart(true);
 }
 
@@ -1413,7 +1429,7 @@ function addPostitToCart(){
   });
 
   renderCart();
-  closePostitModal();
+  hideOverlaySilently('postitModalBackdrop');
   toggleCart(true);
 }
 
