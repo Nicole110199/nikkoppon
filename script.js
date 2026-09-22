@@ -452,6 +452,13 @@ function onZoomChange(val){
   renderCropTransform();
 }
 
+function stepZoom(delta){
+  const slider = document.getElementById('cropZoom');
+  const newVal = Math.max(100, Math.min(300, Number(slider.value) + delta));
+  slider.value = newVal;
+  onZoomChange(newVal);
+}
+
 function startCropDrag(e){
   if(!modalState.image) return; // sin imagen todavía no hay nada que recortar/mover
   cropDrag.active = true;
@@ -720,7 +727,32 @@ function updateFloatingCartBtn(){
   btn.style.display = 'flex';
 }
 
+// Guarda el carrito en el navegador para que sobreviva si el cliente
+// recarga la página o cierra el navegador por accidente. Si el carrito
+// pesa demasiado (imágenes muy grandes), simplemente no lo guarda —
+// el carrito sigue funcionando normal en esa sesión, solo no persiste.
+function saveCartToStorage(){
+  try {
+    localStorage.setItem('nikkoppon_cart', JSON.stringify(cart));
+  } catch (err) {
+    console.warn('No se pudo guardar el carrito localmente (probablemente pesa demasiado):', err);
+  }
+}
+
+function loadCartFromStorage(){
+  try {
+    const saved = localStorage.getItem('nikkoppon_cart');
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(Array.isArray(parsed)) cart = parsed;
+    }
+  } catch (err) {
+    console.warn('No se pudo recuperar el carrito guardado:', err);
+  }
+}
+
 function renderCart(){
+  saveCartToStorage();
   const wrap = document.getElementById('cartItems');
   document.getElementById('cartBadge').textContent = cart.length;
 
@@ -1083,6 +1115,13 @@ function initReceiptMeta(){
 
 let stockItems = [];
 let stockModalState = { item: null, qty: 1, galleryIndex: 0 };
+let stockFinishFilter = 'Mate'; // qué acabado se muestra primero por defecto
+
+function setStockFinishFilter(finish){
+  stockFinishFilter = finish;
+  document.querySelectorAll('#stockFinishFilter .chip').forEach(c=>c.classList.toggle('active', c.dataset.finish===finish));
+  renderStockGrid();
+}
 
 function loadStock(){
   const grid = document.getElementById('stockGrid');
@@ -1115,8 +1154,17 @@ function renderStockGrid(){
     return;
   }
 
+  const filtered = stockItems.filter(item =>
+    (item.finish || '').trim().toLowerCase() === stockFinishFilter.toLowerCase()
+  );
+
+  if(filtered.length === 0){
+    grid.innerHTML = '<div class="stock-empty">Por ahora no hay stickers ' + escapeHtml(stockFinishFilter) + ' en stock — prueba otro acabado arriba.</div>';
+    return;
+  }
+
   grid.innerHTML = '';
-  stockItems.forEach(item=>{
+  filtered.forEach(item=>{
     const qty = Number(item.qty) || 0;
     const card = document.createElement('button');
     card.className = 'stock-card' + (qty <= 0 ? ' is-out' : '');
@@ -1373,6 +1421,7 @@ function addPostitToCart(){
 
 document.addEventListener('DOMContentLoaded', ()=>{
   initUploader();
+  loadCartFromStorage();
   renderCart();
   initGlobalSparkles();
   initReceiptMeta();
