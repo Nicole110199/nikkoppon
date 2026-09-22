@@ -3,7 +3,7 @@ const IG_USERNAME = 'nikkoppon';
 
 /* ⚠️ Pega aquí la URL de tu Google Apps Script publicado como "Aplicación web"
    (ver instrucciones en google-apps-script.gs). Déjalo vacío ('') si todavía
-   no lo configuras — el resto del sitio funciona igual sin esto. */
+   no lo configuras — el resto del sitio funciona igual sin esto.. */
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKkTuXtlesP_SCjCmu7BYQlvaT2VqXkeaed5-pIz3RLq1U2aypAgqUyYErlC-60-rxoA/exec';
 
 /* ⚠️ Cambia esto por cualquier texto largo y difícil de adivinar (por ejemplo,
