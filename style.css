@@ -328,13 +328,24 @@ textarea.notes:focus{outline:none;border-color:var(--grape);}
   user-select:none;-webkit-user-drag:none;pointer-events:none;
 }
 .crop-frame .placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(33,19,52,0.5);gap:6px;text-align:center;padding:0 10px;}
-.crop-controls{display:flex;align-items:center;gap:12px;}
+.crop-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .crop-btn{
   border:2px solid var(--line);background:var(--paper);border-radius:14px;
   padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer;flex:none;color:var(--ink);
 }
 .crop-btn:hover{background:var(--cream);}
-.crop-controls input[type="range"]{flex:1;accent-color:var(--grape);}
+.zoom-btn{
+  border:2px solid var(--line);background:var(--paper);border-radius:50%;
+  width:36px;height:36px;font-weight:800;font-size:18px;line-height:1;cursor:pointer;flex:none;color:var(--grape);
+  display:flex;align-items:center;justify-content:center;
+}
+.zoom-btn:hover{background:var(--cream);}
+.crop-controls input[type="range"]{flex:1;min-width:80px;accent-color:var(--grape);height:6px;}
+@media(max-width:720px){
+  .crop-btn{padding:12px 16px;font-size:14px;}
+  .zoom-btn{width:44px;height:44px;font-size:20px;}
+  .crop-controls input[type="range"]{height:10px;}
+}
 .poster-inner img.artwork{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
 .stage .placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(33,19,52,0.5);gap:6px;text-align:center;padding:0 10px;}
 .placeholder .txt{font-family:'Baloo 2';font-weight:700;font-size:12px;}
@@ -515,6 +526,7 @@ footer.site .word{
   color:inherit;text-decoration:none;cursor:pointer;opacity:0.7;flex:none;
 }
 .ig-navlink:hover{opacity:1;}
+.social-icons{display:flex;align-items:center;gap:14px;}
 @media(max-width:720px){.ig-navlink-text{display:none;}}
 
 /* ---------- cómo hacer tu pedido ---------- */
