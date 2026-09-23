@@ -748,7 +748,7 @@ function updateModalTotals(){
   } else if(modalState.type === 'bookmark'){
     tag = 'Marcapáginas · ' + BOOKMARK_MATERIALS[modalState.material].label + ' · ' + sizeLabel;
   } else if(modalState.type === 'polaroid'){
-    tag = 'Polaroid · ' + sizeLabel;
+    tag = 'Polaroid · ' + sizeLabel + ' · 7,5 x 10,5 cm';
   } else {
     tag = 'Poster · ' + sizeLabel + ' · ' + (modalState.orientation === 'horizontal' ? 'Horizontal' : 'Vertical');
   }
