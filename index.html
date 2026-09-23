@@ -522,11 +522,24 @@
     </div>
     <div class="tear-line"></div>
     <div class="cart-foot">
+      <div class="discount-row" id="discountForm">
+        <input type="text" id="discountInput" class="discount-input" placeholder="Código de descuento" oninput="this.value = this.value.toUpperCase()">
+        <button type="button" class="discount-btn" onclick="applyDiscountCode()">Aplicar</button>
+      </div>
+      <p class="discount-error" id="discountError" style="display:none"></p>
+      <div class="discount-applied" id="discountApplied" style="display:none">
+        <span>✦ Código <b id="discountAppliedCode"></b> aplicado (<span id="discountAppliedPercent"></span>% off)</span>
+        <button type="button" class="discount-remove" onclick="removeDiscountCode()">Quitar</button>
+      </div>
       <label class="terms-check">
         <input type="checkbox" id="termsCheck">
         <span>Estoy de acuerdo con los <a href="#" class="terms-link" onclick="openTermsModal(); return false;">Términos y Condiciones</a>.</span>
       </label>
       <div class="barcode"></div>
+      <div class="cart-total-row" id="discountTotalRow" style="display:none">
+        <span class="label">Descuento</span>
+        <span class="val small" id="discountAmountVal">-$0</span>
+      </div>
       <div class="cart-total-row">
         <span class="label">TOTAL</span>
         <span class="val" id="cartTotal">$0</span>
