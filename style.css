@@ -366,6 +366,21 @@ textarea.notes:focus{outline:none;border-color:var(--grape);}
   transition:background .15s, color .15s;
 }
 .change-image-btn:hover{background:var(--grape);color:#fff;}
+
+.polaroid-slots{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;}
+.polaroid-slot{
+  width:44px;height:44px;border-radius:10px;border:2px solid var(--line);
+  background:var(--paper);cursor:pointer;overflow:hidden;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Baloo 2';font-weight:700;font-size:13px;color:var(--ink-soft);
+  padding:0;
+}
+.polaroid-slot.active{border-color:var(--grape);border-width:3px;}
+.polaroid-slot.filled{border-style:solid;}
+.polaroid-slot:not(.filled){border-style:dashed;}
+.polaroid-slot img{width:100%;height:100%;object-fit:cover;display:block;}
+.polaroid-slot .check{position:absolute;bottom:1px;right:1px;background:var(--mint);color:#1D5C43;border-radius:50%;width:14px;height:14px;font-size:9px;display:flex;align-items:center;justify-content:center;}
+
 .overlay{position:absolute;inset:0;pointer-events:none;}
 .overlay.tornasol{background:conic-gradient(from var(--ang), rgba(255,158,196,0.35), rgba(255,226,138,0.35), rgba(155,232,180,0.35), rgba(158,203,255,0.35), rgba(210,158,255,0.35), rgba(255,158,196,0.35));mix-blend-mode:screen;animation:spin 5s linear infinite;}
 .overlay.mate{background:rgba(0,0,0,0.05);mix-blend-mode:multiply;}
