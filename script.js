@@ -120,7 +120,8 @@ let cart = [];
 let modalState = {
   type:null, material:'mate', sizeId:null, qty:1, image:null, notes:'',
   orientation:'vertical',
-  crop:{ rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 }
+  crop:{ rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 },
+  polaroidSlots:[null,null,null,null,null], activeSlot:0
 };
 
 // Para arrastrar la imagen dentro del marco de recorte (estado global,
@@ -152,11 +153,15 @@ function openModal(type, prefill){
     material: (prefill && prefill.materialId) || (isBookmark ? 'normal' : 'mate'),
     sizeId: (prefill && prefill.sizeId) || (isSticker ? 'm' : (isPoster ? 'a4' : (isPolaroid ? 'unidad' : null))),
     qty: (prefill && prefill.qty) || 1,
-    image: (prefill && prefill.image) || null,
+    image: (prefill && prefill.images) ? null : ((prefill && prefill.image) || null),
     notes: (prefill && prefill.notes) || '',
     orientation: (prefill && prefill.orientation) || 'vertical',
     crop:{ rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 },
-    uploadedNatW:0, uploadedNatH:0
+    uploadedNatW:0, uploadedNatH:0,
+    polaroidSlots: (prefill && prefill.images)
+      ? prefill.images.map(img => img ? { image: img, crop:{ rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 } } : null)
+      : [null,null,null,null,null],
+    activeSlot: 0
   };
   document.getElementById('notesInput').value = modalState.notes;
   document.getElementById('cropZoom').value = 100;
@@ -167,6 +172,7 @@ function openModal(type, prefill){
   document.getElementById('sizeField').style.display = isBookmark ? 'none' : '';
   document.getElementById('orientationField').style.display = isPoster ? '' : 'none';
   document.getElementById('cropControlsField').style.display = 'none';
+  document.getElementById('polaroidSlots').style.display = 'none';
   document.getElementById('modalWindowTitle').textContent =
     isSticker ? 'STICKER.EXE' : (isPoster ? 'POSTER.EXE' : (isPolaroid ? 'POLAROID.EXE' : 'MARCAPAGINAS.EXE'));
 
@@ -183,7 +189,7 @@ function openModal(type, prefill){
   } else if(isPolaroid){
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Polaroid';
-    document.getElementById('modalDesc').textContent = 'Elige unidad o set x5, sube tu imagen y acomódala dentro del marco.';
+    document.getElementById('modalDesc').textContent = 'Elige unidad (1 foto) o set x5 (5 fotos distintas), sube tu imagen y acomódala dentro del marco.';
   } else {
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Poster';
@@ -193,6 +199,7 @@ function openModal(type, prefill){
 
   renderMaterialRow();
   renderSizeRow();
+  if(isPolaroid) updatePolaroidModeVisibility();
   buildStage();
   updateModalTotals();
 
@@ -270,8 +277,78 @@ function setSize(id){
     modalState.crop.offsetY = 0;
     buildStage();
   }
+  if(modalState.type === 'polaroid'){
+    updatePolaroidModeVisibility();
+  }
   updateModalTotals();
   reevaluateResolutionWarning();
+}
+
+/* ---------- set de 5 fotos distintas para Polaroid ---------- */
+
+function isPolaroidSet(){
+  return modalState.type === 'polaroid' && modalState.sizeId === 'set5';
+}
+
+// Guarda la imagen/recorte que se está viendo en ese momento dentro del
+// slot activo, antes de cambiar a otro slot o de cerrar el modal.
+function saveCurrentSlotState(){
+  if(!isPolaroidSet()) return;
+  modalState.polaroidSlots[modalState.activeSlot] = modalState.image
+    ? { image: modalState.image, crop: { ...modalState.crop } }
+    : null;
+}
+
+// Carga en la vista principal lo que haya guardado en el slot activo
+// (o la deja vacía si ese slot todavía no tiene foto).
+function loadActiveSlotIntoView(){
+  const slot = modalState.polaroidSlots[modalState.activeSlot];
+  if(slot){
+    modalState.image = slot.image;
+    modalState.crop = { ...slot.crop };
+  } else {
+    modalState.image = null;
+    modalState.crop = { rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 };
+  }
+}
+
+function selectPolaroidSlot(n){
+  saveCurrentSlotState();
+  modalState.activeSlot = n;
+  loadActiveSlotIntoView();
+  renderPolaroidSlots();
+  buildStage();
+  reevaluateResolutionWarning();
+}
+
+function renderPolaroidSlots(){
+  const wrap = document.getElementById('polaroidSlots');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  modalState.polaroidSlots.forEach((slot, i)=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'polaroid-slot' + (slot ? ' filled' : '') + (i === modalState.activeSlot ? ' active' : '');
+    btn.onclick = () => selectPolaroidSlot(i);
+    btn.innerHTML = slot
+      ? '<img src="' + slot.image + '" alt="Foto ' + (i+1) + '"><span class="check">✓</span>'
+      : String(i + 1);
+    wrap.appendChild(btn);
+  });
+}
+
+// Muestra u oculta los slots según si el tipo/tamaño actual es el set de
+// Polaroid, y sincroniza la vista con lo que haya en el slot activo.
+function updatePolaroidModeVisibility(){
+  const wrap = document.getElementById('polaroidSlots');
+  const isSet = isPolaroidSet();
+  wrap.style.display = isSet ? 'flex' : 'none';
+
+  if(isSet){
+    loadActiveSlotIntoView();
+    renderPolaroidSlots();
+  }
+  buildStage();
 }
 
 function setOrientation(mode){
@@ -561,6 +638,52 @@ function exportCroppedImage(){
   return canvas.toDataURL('image/jpeg', 0.92);
 }
 
+// Exporta el recorte de UN slot específico (usada para el set de 5 fotos
+// de Polaroid, donde cada foto tiene su propia imagen y su propio recorte,
+// sin depender de lo que esté cargado en la vista previa en ese momento).
+function exportSlotImage(slot){
+  return new Promise((resolve)=>{
+    if(!slot || !slot.image){ resolve(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      const frameDims = computeFrameDims();
+      const crop = slot.crop;
+      const rot = crop.rotation;
+      const swapped = (rot === 90 || rot === 270);
+      const effW = swapped ? crop.natH : crop.natW;
+      const effH = swapped ? crop.natW : crop.natH;
+      const baseScale = Math.max(frameDims.wPx / effW, frameDims.hPx / effH);
+      const zoomFactor = crop.zoom;
+      const displayW = crop.natW * baseScale * zoomFactor;
+      const displayH = crop.natH * baseScale * zoomFactor;
+
+      let outW, outH;
+      if(frameDims.wCm >= frameDims.hCm){
+        outW = CROP_EXPORT_LONG_PX;
+        outH = Math.round(CROP_EXPORT_LONG_PX * frameDims.hCm / frameDims.wCm);
+      } else {
+        outH = CROP_EXPORT_LONG_PX;
+        outW = Math.round(CROP_EXPORT_LONG_PX * frameDims.wCm / frameDims.hCm);
+      }
+      const scaleFactor = outW / frameDims.wPx;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+
+      ctx.save();
+      ctx.translate(outW / 2 + crop.offsetX * scaleFactor, outH / 2 + crop.offsetY * scaleFactor);
+      ctx.rotate(rot * Math.PI / 180);
+      ctx.drawImage(img, -(displayW * scaleFactor) / 2, -(displayH * scaleFactor) / 2, displayW * scaleFactor, displayH * scaleFactor);
+      ctx.restore();
+
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.src = slot.image;
+  });
+}
+
 function updateModalTotals(){
   let price, sizeLabel;
   if(modalState.type === 'sticker'){
@@ -606,6 +729,10 @@ function handleFile(file){
     }
     checkImageResolution(e.target.result);
     refreshStageContent();
+    if(isPolaroidSet()){
+      saveCurrentSlotState();
+      renderPolaroidSlots();
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -645,14 +772,23 @@ function reevaluateResolutionWarning(){
   warningEl.style.display = longSide < minPx ? '' : 'none';
 }
 
-function addToCart(){
-  if(!modalState.image){
+async function addToCart(){
+  const isSet = isPolaroidSet();
+
+  if(isSet){
+    saveCurrentSlotState();
+    const filledCount = modalState.polaroidSlots.filter(Boolean).length;
+    if(filledCount < 5){
+      alert('Sube las 5 fotos del set antes de agregar al carrito (llevas ' + filledCount + ' de 5).');
+      return;
+    }
+  } else if(!modalState.image){
     alert('Sube una imagen antes de agregar el producto al carrito.');
     return;
   }
   modalState.notes = document.getElementById('notesInput').value.trim();
 
-  let price, meta, name, swatchClass, boxWcm, boxHcm, materialLabel, finalImage, materialId, sizeId;
+  let price, meta, name, swatchClass, boxWcm, boxHcm, materialLabel, finalImage, finalImages, materialId, sizeId;
   if(modalState.type === 'sticker'){
     const size = STICKER_SIZES.find(s=>s.id===modalState.sizeId) || STICKER_SIZES[1];
     const mat = STICKER_MATERIALS[modalState.material];
@@ -681,15 +817,22 @@ function addToCart(){
   } else if(modalState.type === 'polaroid'){
     const size = POLAROID_SIZES.find(s=>s.id===modalState.sizeId) || POLAROID_SIZES[0];
     price = size.price * modalState.qty;
-    meta = size.label + ' · 8 x 10 cm';
     name = 'Polaroid';
     swatchClass = 'swatch-posterA';
-    boxWcm = POLAROID_SIZE.wCm;
-    boxHcm = POLAROID_SIZE.hCm;
     materialLabel = '';
     materialId = null;
     sizeId = size.id;
-    finalImage = modalState.image ? exportCroppedImage() : null;
+
+    if(isSet){
+      meta = size.label + ' (5 fotos distintas) · 8 x 10 cm';
+      finalImages = await Promise.all(modalState.polaroidSlots.map(slot => exportSlotImage(slot)));
+      finalImage = finalImages[0];
+    } else {
+      meta = size.label + ' · 8 x 10 cm';
+      finalImage = modalState.image ? exportCroppedImage() : null;
+    }
+    boxWcm = POLAROID_SIZE.wCm;
+    boxHcm = POLAROID_SIZE.hCm;
   } else {
     const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
     const frameDims = computeFrameDims();
@@ -718,6 +861,7 @@ function addToCart(){
     swatchClass,
     boxWcm, boxHcm
   };
+  if(finalImages) cartItem.images = finalImages;
 
   if(editingCartIndex !== null){
     cart[editingCartIndex] = cartItem;
