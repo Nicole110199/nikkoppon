@@ -409,6 +409,23 @@ function buildStage(){
     wrap.innerHTML = renderStageInner();
     stage.appendChild(wrap);
     initStagePreviewDropzone(wrap);
+  } else if(!modalState.image){
+    // Todavía no hay imagen: se muestra un recuadro amplio y cuadrado,
+    // igual que en Sticker — así el primer contacto no se ve apretado en
+    // productos alargados (Marcapáginas, Polaroid, Poster vertical, etc).
+    // Recién cuando se sube la foto se cambia a la forma real del producto.
+    const wrap = document.createElement('div');
+    wrap.className = 'sticker-stage generic-upload';
+    wrap.innerHTML =
+      '<div class="placeholder upload-placeholder" id="placeholder">' +
+        '<div class="dz-icon">✦</div>' +
+        '<div class="dz-main">Sube o arrastra tu imagen aquí</div>' +
+        '<div class="dz-sub">PNG, JPG o WEBP</div>' +
+        '<button type="button" class="dz-btn" id="dzButton">Elegir archivo</button>' +
+      '</div>' +
+      '<img class="artwork" id="artworkImg" style="display:none">';
+    stage.appendChild(wrap);
+    initStagePreviewDropzone(wrap);
   } else {
     const frameDims = computeFrameDims();
     const frame = document.createElement('div');
@@ -748,7 +765,11 @@ function handleFile(file){
       document.getElementById('cropZoom').value = 100;
     }
     checkImageResolution(e.target.result);
-    refreshStageContent();
+    if(modalState.type === 'sticker'){
+      refreshStageContent();
+    } else {
+      buildStage(); // pasa del recuadro genérico de subida al marco real del producto
+    }
     if(isPolaroidSet()){
       saveCurrentSlotState();
       renderPolaroidSlots();
