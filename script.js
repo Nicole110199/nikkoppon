@@ -110,7 +110,13 @@ const POLAROID_SIZES = [
   {id:'unidad', label:'Unidad', price:600},
   {id:'set5', label:'Set x5', price:2700}
 ];
-const POLAROID_SIZE = { wCm:8, hCm:10 }; // tamaño físico único de la foto, sin variación
+// Polaroid: tamaño TOTAL con marco incluido = 7,5 cm ancho x 10,5 cm alto.
+// Margen de 0,5 cm arriba, izquierda y derecha; el margen de abajo queda
+// más grueso (como un polaroid real), con lo que sobra: 10,5 - 0,5 - 7,6 = 2,4 cm.
+// Eso deja la ventana de la foto en 6,5 cm ancho x 7,6 cm alto.
+const POLAROID_SIZE = { wCm:7.5, hCm:10.5 }; // tamaño total, con marco
+const POLAROID_PHOTO_SIZE = { wCm:6.5, hCm:7.6 }; // ventana de la foto, dentro del marco
+const POLAROID_MARGIN = { top:0.5, left:0.5, right:0.5 }; // el de abajo se calcula solo
 
 const FRAME_LONG_PX = 220;   // tamaño del marco de recorte en pantalla
 const CROP_EXPORT_LONG_PX = 1600; // resolución del recorte final exportado
@@ -376,8 +382,8 @@ function computeFrameDims(){
     wCm = BOOKMARK_SIZE.wCm;
     hCm = BOOKMARK_SIZE.hCm;
   } else if(modalState.type === 'polaroid'){
-    wCm = POLAROID_SIZE.wCm;
-    hCm = POLAROID_SIZE.hCm;
+    wCm = POLAROID_PHOTO_SIZE.wCm;
+    hCm = POLAROID_PHOTO_SIZE.hCm;
   } else {
     const size = POSTER_SIZES.find(s=>s.id===modalState.sizeId) || POSTER_SIZES[0];
     const longSide = Math.max(size.wCm, size.hCm);
@@ -419,7 +425,27 @@ function buildStage(){
         '<button type="button" class="dz-btn" id="dzButton">Elegir archivo</button>' +
       '</div>' +
       '<img class="crop-image" id="artworkImg" style="display:none">';
-    stage.appendChild(frame);
+
+    if(modalState.type === 'polaroid'){
+      // Marco blanco alrededor, con las proporciones reales del polaroid
+      // (0,5 cm arriba/izquierda/derecha, y el resto abajo), solo decorativo
+      // — el recorte en sí sigue funcionando sobre la ventana de la foto.
+      // Se usa la misma escala (píxeles por cm) que ya tiene el marco de
+      // la foto, para que las proporciones queden exactas.
+      const pxPerCm = frameDims.wPx / POLAROID_PHOTO_SIZE.wCm;
+      const outer = document.createElement('div');
+      outer.className = 'polaroid-outer';
+      outer.style.width = (pxPerCm * POLAROID_SIZE.wCm) + 'px';
+      outer.style.height = (pxPerCm * POLAROID_SIZE.hCm) + 'px';
+      outer.style.paddingLeft = (pxPerCm * POLAROID_MARGIN.left) + 'px';
+      outer.style.paddingRight = (pxPerCm * POLAROID_MARGIN.right) + 'px';
+      outer.style.paddingTop = (pxPerCm * POLAROID_MARGIN.top) + 'px';
+      outer.appendChild(frame);
+      stage.appendChild(outer);
+    } else {
+      stage.appendChild(frame);
+    }
+
     frame.addEventListener('mousedown', startCropDrag);
     frame.addEventListener('touchstart', startCropDrag, {passive:false});
     initStagePreviewDropzone(frame);
@@ -602,40 +628,66 @@ function endCropDrag(){
 function exportCroppedImage(){
   const img = document.getElementById('artworkImg');
   if(!img || !modalState.crop.natW) return modalState.image;
+  return renderCropToCanvas(img, modalState.crop, modalState.type).toDataURL('image/jpeg', 0.92);
+}
 
-  const frameDims = computeFrameDims();
-  const rot = modalState.crop.rotation;
+// Dibuja el recorte (rotación/zoom/posición) de una imagen ya cargada en
+// un <img> o Image(), y devuelve el canvas final. Para Polaroid, en vez de
+// llenar todo el lienzo con la foto, la compone dentro de la ventana de
+// foto real (6,5 x 7,6 cm), dejando el resto como marco blanco — así la
+// imagen que se exporta ya incluye el marco, lista para imprimir/enviar.
+function renderCropToCanvas(img, crop, type){
+  const frameDims = computeFrameDims(); // ventana de recorte (= la foto en polaroid)
+  const rot = crop.rotation;
   const swapped = (rot === 90 || rot === 270);
-  const effW = swapped ? modalState.crop.natH : modalState.crop.natW;
-  const effH = swapped ? modalState.crop.natW : modalState.crop.natH;
+  const effW = swapped ? crop.natH : crop.natW;
+  const effH = swapped ? crop.natW : crop.natH;
   const baseScale = Math.max(frameDims.wPx / effW, frameDims.hPx / effH);
-  const zoomFactor = modalState.crop.zoom;
-  const displayW = modalState.crop.natW * baseScale * zoomFactor;
-  const displayH = modalState.crop.natH * baseScale * zoomFactor;
+  const zoomFactor = crop.zoom;
+  const displayW = crop.natW * baseScale * zoomFactor;
+  const displayH = crop.natH * baseScale * zoomFactor;
+
+  const isPolaroid = type === 'polaroid';
+  const outerCm = isPolaroid ? POLAROID_SIZE : frameDims;
 
   let outW, outH;
-  if(frameDims.wCm >= frameDims.hCm){
+  if(outerCm.wCm >= outerCm.hCm){
     outW = CROP_EXPORT_LONG_PX;
-    outH = Math.round(CROP_EXPORT_LONG_PX * frameDims.hCm / frameDims.wCm);
+    outH = Math.round(CROP_EXPORT_LONG_PX * outerCm.hCm / outerCm.wCm);
   } else {
     outH = CROP_EXPORT_LONG_PX;
-    outW = Math.round(CROP_EXPORT_LONG_PX * frameDims.wCm / frameDims.hCm);
+    outW = Math.round(CROP_EXPORT_LONG_PX * outerCm.wCm / outerCm.hCm);
   }
 
-  const scaleFactor = outW / frameDims.wPx;
+  const pxPerCmExport = outW / outerCm.wCm;
+  const photoLeftPx = isPolaroid ? pxPerCmExport * POLAROID_MARGIN.left : 0;
+  const photoTopPx = isPolaroid ? pxPerCmExport * POLAROID_MARGIN.top : 0;
+  const photoWpx = isPolaroid ? pxPerCmExport * POLAROID_PHOTO_SIZE.wCm : outW;
+  const photoHpx = isPolaroid ? pxPerCmExport * POLAROID_PHOTO_SIZE.hCm : outH;
+  const scaleFactor = photoWpx / frameDims.wPx;
+  const centerX = photoLeftPx + photoWpx / 2;
+  const centerY = photoTopPx + photoHpx / 2;
 
   const canvas = document.createElement('canvas');
   canvas.width = outW;
   canvas.height = outH;
   const ctx = canvas.getContext('2d');
 
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, outW, outH);
+
   ctx.save();
-  ctx.translate(outW / 2 + modalState.crop.offsetX * scaleFactor, outH / 2 + modalState.crop.offsetY * scaleFactor);
+  if(isPolaroid){
+    ctx.beginPath();
+    ctx.rect(photoLeftPx, photoTopPx, photoWpx, photoHpx);
+    ctx.clip();
+  }
+  ctx.translate(centerX + crop.offsetX * scaleFactor, centerY + crop.offsetY * scaleFactor);
   ctx.rotate(rot * Math.PI / 180);
   ctx.drawImage(img, -(displayW * scaleFactor) / 2, -(displayH * scaleFactor) / 2, displayW * scaleFactor, displayH * scaleFactor);
   ctx.restore();
 
-  return canvas.toDataURL('image/jpeg', 0.92);
+  return canvas;
 }
 
 // Exporta el recorte de UN slot específico (usada para el set de 5 fotos
@@ -646,39 +698,7 @@ function exportSlotImage(slot){
     if(!slot || !slot.image){ resolve(null); return; }
     const img = new Image();
     img.onload = () => {
-      const frameDims = computeFrameDims();
-      const crop = slot.crop;
-      const rot = crop.rotation;
-      const swapped = (rot === 90 || rot === 270);
-      const effW = swapped ? crop.natH : crop.natW;
-      const effH = swapped ? crop.natW : crop.natH;
-      const baseScale = Math.max(frameDims.wPx / effW, frameDims.hPx / effH);
-      const zoomFactor = crop.zoom;
-      const displayW = crop.natW * baseScale * zoomFactor;
-      const displayH = crop.natH * baseScale * zoomFactor;
-
-      let outW, outH;
-      if(frameDims.wCm >= frameDims.hCm){
-        outW = CROP_EXPORT_LONG_PX;
-        outH = Math.round(CROP_EXPORT_LONG_PX * frameDims.hCm / frameDims.wCm);
-      } else {
-        outH = CROP_EXPORT_LONG_PX;
-        outW = Math.round(CROP_EXPORT_LONG_PX * frameDims.wCm / frameDims.hCm);
-      }
-      const scaleFactor = outW / frameDims.wPx;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = outW;
-      canvas.height = outH;
-      const ctx = canvas.getContext('2d');
-
-      ctx.save();
-      ctx.translate(outW / 2 + crop.offsetX * scaleFactor, outH / 2 + crop.offsetY * scaleFactor);
-      ctx.rotate(rot * Math.PI / 180);
-      ctx.drawImage(img, -(displayW * scaleFactor) / 2, -(displayH * scaleFactor) / 2, displayW * scaleFactor, displayH * scaleFactor);
-      ctx.restore();
-
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
+      resolve(renderCropToCanvas(img, slot.crop, modalState.type).toDataURL('image/jpeg', 0.92));
     };
     img.src = slot.image;
   });
@@ -953,6 +973,10 @@ function renderCart(){
 
   if(cart.length === 0){
     wrap.innerHTML = '<div class="cart-empty">Todavía no agregaste ningún producto.</div>';
+    appliedDiscount = null;
+    document.getElementById('discountApplied').style.display = 'none';
+    document.getElementById('discountForm').style.display = '';
+    document.getElementById('discountTotalRow').style.display = 'none';
     document.getElementById('cartTotal').textContent = '$0';
     updateFloatingCartBtn();
     return;
@@ -994,7 +1018,19 @@ function renderCart(){
     wrap.appendChild(row);
   });
 
-  document.getElementById('cartTotal').textContent = formatCLP(total);
+  revalidateAppliedDiscount();
+
+  const discountAmount = getDiscountAmount(total);
+  document.getElementById('discountForm').style.display = appliedDiscount ? 'none' : '';
+  document.getElementById('discountApplied').style.display = appliedDiscount ? '' : 'none';
+  if(appliedDiscount){
+    document.getElementById('discountAppliedCode').textContent = appliedDiscount.code;
+    document.getElementById('discountAppliedPercent').textContent = appliedDiscount.percent;
+  }
+  document.getElementById('discountTotalRow').style.display = discountAmount > 0 ? '' : 'none';
+  document.getElementById('discountAmountVal').textContent = '-' + formatCLP(discountAmount);
+
+  document.getElementById('cartTotal').textContent = formatCLP(total - discountAmount);
   updateFloatingCartBtn();
 }
 
@@ -1027,8 +1063,83 @@ function getPersonalizedSubtotal(){
     .reduce((sum, item) => sum + item.price, 0);
 }
 
+/* ---------- códigos de descuento ---------- */
+
+let discountCodes = [];
+let appliedDiscount = null; // { code, percent, minimum }
+
+function loadDiscounts(){
+  if(!APPS_SCRIPT_URL) return;
+  fetch(APPS_SCRIPT_URL + '?action=discounts')
+    .then(res => res.json())
+    .then(data => {
+      if(data && data.error){
+        console.error('Error cargando los códigos de descuento:', data.error);
+        return;
+      }
+      discountCodes = (data && data.items) || [];
+    })
+    .catch(err => console.error('Error cargando los códigos de descuento:', err));
+}
+
+function applyDiscountCode(){
+  const input = document.getElementById('discountInput');
+  const code = input.value.trim().toUpperCase();
+  const errorEl = document.getElementById('discountError');
+
+  if(!code){
+    showDiscountError('Escribe un código antes de aplicar.');
+    return;
+  }
+
+  const match = discountCodes.find(d => d.code === code);
+  if(!match){
+    showDiscountError('Ese código no es válido.');
+    return;
+  }
+
+  const subtotal = getCartSubtotal();
+  if(match.minimum > 0 && subtotal < match.minimum){
+    showDiscountError('Este código necesita una compra mínima de ' + formatCLP(match.minimum) + ' (te faltan ' + formatCLP(match.minimum - subtotal) + ').');
+    return;
+  }
+
+  appliedDiscount = match;
+  errorEl.style.display = 'none';
+  input.value = '';
+  renderCart();
+}
+
+function removeDiscountCode(){
+  appliedDiscount = null;
+  document.getElementById('discountError').style.display = 'none';
+  renderCart();
+}
+
+function showDiscountError(msg){
+  const errorEl = document.getElementById('discountError');
+  errorEl.textContent = '⚠ ' + msg;
+  errorEl.style.display = '';
+}
+
+// Si el carrito cambió (se quitó un producto, se editó, etc.) y el
+// descuento aplicado ya no alcanza su mínimo, se quita solo y se avisa.
+function revalidateAppliedDiscount(){
+  if(!appliedDiscount) return;
+  if(appliedDiscount.minimum > 0 && getCartSubtotal() < appliedDiscount.minimum){
+    appliedDiscount = null;
+    showDiscountError('Tu código se quitó porque el carrito ya no alcanza el mínimo requerido.');
+  }
+}
+
+function getDiscountAmount(subtotal){
+  if(!appliedDiscount) return 0;
+  return Math.round(subtotal * (appliedDiscount.percent / 100));
+}
+
 function updateCheckoutTotal(){
   const subtotal = getCartSubtotal();
+  const discountAmount = getDiscountAmount(subtotal);
   const fee = checkoutState.delivery === 'envio' ? DELIVERY_FEE : 0;
   const feeRow = document.getElementById('deliveryFeeRow');
 
@@ -1039,7 +1150,7 @@ function updateCheckoutTotal(){
     feeRow.style.display = 'none';
   }
 
-  document.getElementById('checkoutTotal').textContent = formatCLP(subtotal + fee);
+  document.getElementById('checkoutTotal').textContent = formatCLP(subtotal - discountAmount + fee);
 }
 
 function goToCheckout(){
@@ -1098,19 +1209,24 @@ async function buildOrderPayload(){
       qty: item.qty,
       price: item.price,
       image: item.image,
+      images: item.images,
       boxWcm: item.boxWcm,
       boxHcm: item.boxHcm
     });
   }
+
+  const discountAmount = getDiscountAmount(total);
+  const discountedSubtotal = total - discountAmount;
 
   return {
     secret: SHARED_SECRET,
     orderNumber: (document.getElementById('receiptNumber') || {}).textContent || '',
     date: (document.getElementById('receiptDate') || {}).textContent || '',
     items,
-    subtotal: total,
+    subtotal: discountedSubtotal,
+    discountCode: appliedDiscount ? appliedDiscount.code : null,
     deliveryFee: 0,
-    total: formatCLP(total)
+    total: formatCLP(discountedSubtotal)
   };
 }
 
@@ -1622,6 +1738,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   initReceiptMeta();
   loadStock();
   loadPostits();
+  loadDiscounts();
 
   // Listeners globales del recortador de poster (se agregan una sola vez;
   // cropDrag.active controla si realmente hay que mover algo)
