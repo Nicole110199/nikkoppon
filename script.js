@@ -928,7 +928,7 @@ function toggleCart(open){
   document.getElementById('cartDrawer').classList.toggle('open', open);
   document.getElementById('cartBackdrop').classList.toggle('open', open);
   if(open){
-    showView('cart');
+    showView(activeConfirmation ? 'confirmation' : 'cart');
     pushOverlayHistory();
   } else {
     consumeOverlayHistory();
@@ -1351,12 +1351,70 @@ async function confirmOrder(){
   sendOrderToGoogleDoc(payload).finally(()=>{
     btn.disabled = false;
     btn.textContent = 'Confirmar pedido';
-    document.getElementById('confirmOrderNumber').textContent = (document.getElementById('receiptNumber') || {}).textContent || '';
+    const orderNumber = (document.getElementById('receiptNumber') || {}).textContent || '';
+    document.getElementById('confirmOrderNumber').textContent = orderNumber;
+
+    const expiresAt = Date.now() + 30 * 60 * 1000;
+    activeConfirmation = { orderNumber, expiresAt };
+    saveConfirmationToStorage();
+
     showView('confirmation');
     startCountdown(30 * 60);
     cart = [];
     renderCart();
   });
+}
+
+/* ---------- persistencia de la pantalla de confirmación ----------
+   Si el cliente cierra el carrito sin querer (clic afuera, bot\u00f3n de
+   volver del celular, etc.) mientras está viendo los datos de
+   transferencia, al volver a abrir el carrito debe seguir viendo esa
+   misma pantalla — no un carrito vacío. Esto también sobrevive a una
+   recarga de página, mientras los 30 minutos no se hayan cumplido. */
+
+let activeConfirmation = null; // { orderNumber, expiresAt }
+
+function saveConfirmationToStorage(){
+  try {
+    if(activeConfirmation){
+      localStorage.setItem('nikkoppon_confirmation', JSON.stringify(activeConfirmation));
+    } else {
+      localStorage.removeItem('nikkoppon_confirmation');
+    }
+  } catch(err){
+    console.warn('No se pudo guardar el estado de la confirmación:', err);
+  }
+}
+
+function loadConfirmationFromStorage(){
+  try {
+    const saved = localStorage.getItem('nikkoppon_confirmation');
+    if(!saved) return;
+    const parsed = JSON.parse(saved);
+    if(!parsed || !parsed.expiresAt) return;
+
+    const remainingSeconds = Math.round((parsed.expiresAt - Date.now()) / 1000);
+    if(remainingSeconds <= 0){
+      localStorage.removeItem('nikkoppon_confirmation');
+      return;
+    }
+
+    activeConfirmation = parsed;
+    document.getElementById('confirmOrderNumber').textContent = parsed.orderNumber || '';
+    startCountdown(remainingSeconds);
+  } catch(err){
+    console.warn('No se pudo recuperar el estado de la confirmación:', err);
+  }
+}
+
+// El botón "Hacer una nueva compra" de la pantalla de confirmación —
+// recién ahí se suelta la confirmación anterior y el carrito vuelve a
+// abrirse vacío, listo para un pedido nuevo.
+function startNewPurchase(){
+  activeConfirmation = null;
+  saveConfirmationToStorage();
+  clearInterval(countdownInterval);
+  toggleCart(false);
 }
 
 function startCountdown(seconds){
@@ -1372,6 +1430,10 @@ function startCountdown(seconds){
     if(remaining <= 0){
       el.classList.add('expired');
       clearInterval(countdownInterval);
+      if(activeConfirmation){
+        activeConfirmation = null;
+        saveConfirmationToStorage();
+      }
     }
   }
 
@@ -1386,8 +1448,11 @@ function openInstagramForProof(){
   window.open('https://ig.me/m/' + IG_USERNAME, '_blank');
 }
 
+// "Cerrar" solo esconde el carrito — el cronómetro sigue corriendo por
+// detrás, así el cliente puede volver a abrir el carrito más tarde y
+// seguir viendo los datos de transferencia, en vez de encontrarse con
+// un carrito vacío.
 function closeConfirmation(){
-  clearInterval(countdownInterval);
   toggleCart(false);
 }
 
@@ -1754,6 +1819,7 @@ function addPostitToCart(){
 document.addEventListener('DOMContentLoaded', ()=>{
   initUploader();
   loadCartFromStorage();
+  loadConfirmationFromStorage();
   renderCart();
   initGlobalSparkles();
   initReceiptMeta();
