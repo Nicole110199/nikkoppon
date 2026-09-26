@@ -1175,6 +1175,16 @@ function computePromotions(){
   return { discount: Math.round(discount), applied };
 }
 
+// Revisa si un item del carrito coincide con el producto (y, si el cupón
+// los especifica, también el acabado y/o tamaño) que pide un cupón de
+// tipo "cantidad_fija".
+function couponMatchesItem(item, coupon){
+  if(item.type !== coupon.producto) return false;
+  if(coupon.acabado && (item.materialId || '').toLowerCase() !== coupon.acabado) return false;
+  if(coupon.tamano && (item.sizeId || '').toLowerCase() !== coupon.tamano) return false;
+  return true;
+}
+
 function applyDiscountCode(){
   const input = document.getElementById('discountInput');
   const code = input.value.trim().toUpperCase();
@@ -1192,9 +1202,9 @@ function applyDiscountCode(){
   }
 
   if(match.tipo === 'cantidad_fija'){
-    const totalQty = cart.filter(item => item.type === match.producto).reduce((s,i)=>s+i.qty, 0);
+    const totalQty = cart.filter(item => couponMatchesItem(item, match)).reduce((s,i)=>s+i.qty, 0);
     if(totalQty < match.cantidad){
-      showDiscountError('Este cupón necesita al menos ' + match.cantidad + ' unidades de ese producto en tu carrito (llevas ' + totalQty + ').');
+      showDiscountError('Este cupón necesita al menos ' + match.cantidad + ' unidades de esa variante en tu carrito (llevas ' + totalQty + ').');
       return;
     }
   } else {
@@ -1228,10 +1238,10 @@ function showDiscountError(msg){
 function revalidateAppliedDiscount(){
   if(!appliedDiscount) return;
   if(appliedDiscount.tipo === 'cantidad_fija'){
-    const totalQty = cart.filter(item => item.type === appliedDiscount.producto).reduce((s,i)=>s+i.qty, 0);
+    const totalQty = cart.filter(item => couponMatchesItem(item, appliedDiscount)).reduce((s,i)=>s+i.qty, 0);
     if(totalQty < appliedDiscount.cantidad){
       appliedDiscount = null;
-      showDiscountError('Tu cupón se quitó porque el carrito ya no tiene suficientes unidades de ese producto.');
+      showDiscountError('Tu cupón se quitó porque el carrito ya no tiene suficientes unidades de esa variante.');
     }
   } else if(appliedDiscount.minimum > 0 && getCartSubtotal() < appliedDiscount.minimum){
     appliedDiscount = null;
@@ -1243,7 +1253,7 @@ function getDiscountAmount(subtotal){
   if(!appliedDiscount) return 0;
 
   if(appliedDiscount.tipo === 'cantidad_fija'){
-    const matching = cart.filter(item => item.type === appliedDiscount.producto);
+    const matching = cart.filter(item => couponMatchesItem(item, appliedDiscount));
     const units = [];
     matching.forEach(item => {
       const unitPrice = item.qty > 0 ? item.price / item.qty : 0;
