@@ -108,6 +108,21 @@
   <div class="hero-banner-stars">
     <span class="spark s1">✦</span><span class="spark s2">✦</span><span class="spark s3">✦</span><span class="spark s4">✧</span>
   </div>
+
+  <!--
+    Carrusel del banner: cada imagen es un div ".hero-slide" con su propia
+    imagen de fondo. Para agregar más fotos, copia una de estas líneas y
+    cambia el nombre del archivo (debe estar subido a tu repo, igual que
+    hero-banner.png). El orden de arriba hacia abajo es el orden en que
+    van a rotar.
+  -->
+  <div class="hero-slides" id="heroSlides">
+    <div class="hero-slide active" style="background-image:url('hero-banner.png')"></div>
+  </div>
+
+  <button type="button" class="hero-nav prev" onclick="heroSlideStep(-1)" aria-label="Foto anterior">‹</button>
+  <button type="button" class="hero-nav next" onclick="heroSlideStep(1)" aria-label="Foto siguiente">›</button>
+  <div class="hero-dots" id="heroDots"></div>
 </section>
     </div>
   </div>
@@ -522,25 +537,24 @@
     <div class="cart-foot">
       <div class="promo-applied" id="promoApplied" style="display:none"></div>
       <div class="discount-row" id="discountForm">
-        <input type="text" id="discountInput" class="discount-input" placeholder="Código de descuento" oninput="this.value = this.value.toUpperCase()">
+        <input type="text" id="discountInput" class="discount-input" placeholder="Código de cupón" oninput="this.value = this.value.toUpperCase()">
         <button type="button" class="discount-btn" onclick="applyDiscountCode()">Aplicar</button>
       </div>
       <p class="discount-error" id="discountError" style="display:none"></p>
       <div class="discount-applied" id="discountApplied" style="display:none">
-        <span>✦ Código <b id="discountAppliedCode"></b> aplicado (<span id="discountAppliedPercent"></span>% off)</span>
+        <span>✦ Cupón <b id="discountAppliedCode"></b> aplicado (<span id="discountAppliedDetail"></span>)</span>
         <button type="button" class="discount-remove" onclick="removeDiscountCode()">Quitar</button>
       </div>
       <label class="terms-check">
         <input type="checkbox" id="termsCheck">
         <span>Estoy de acuerdo con los <a href="#" class="terms-link" onclick="openTermsModal(); return false;">Términos y Condiciones</a>.</span>
       </label>
-      <div class="barcode"></div>
       <div class="cart-total-row" id="promoTotalRow" style="display:none">
         <span class="label">Promoción</span>
         <span class="val small" id="promoAmountVal">-$0</span>
       </div>
       <div class="cart-total-row" id="discountTotalRow" style="display:none">
-        <span class="label">Descuento</span>
+        <span class="label">Cupón</span>
         <span class="val small" id="discountAmountVal">-$0</span>
       </div>
       <div class="cart-total-row">
