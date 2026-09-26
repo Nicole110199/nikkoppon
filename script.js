@@ -1041,7 +1041,16 @@ function renderCart(){
 
   revalidateAppliedDiscount();
 
-  const discountAmount = getDiscountAmount(total);
+  const promoResult = computePromotions();
+  const promoAmount = promoResult.discount;
+  document.getElementById('promoApplied').style.display = promoAmount > 0 ? '' : 'none';
+  document.getElementById('promoApplied').innerHTML = promoAmount > 0
+    ? '🎉 ' + promoResult.applied.map(escapeHtml).join(' · ') + ' aplicado'
+    : '';
+  document.getElementById('promoTotalRow').style.display = promoAmount > 0 ? '' : 'none';
+  document.getElementById('promoAmountVal').textContent = '-' + formatCLP(promoAmount);
+
+  const discountAmount = getDiscountAmount(total - promoAmount);
   document.getElementById('discountForm').style.display = appliedDiscount ? 'none' : '';
   document.getElementById('discountApplied').style.display = appliedDiscount ? '' : 'none';
   if(appliedDiscount){
@@ -1051,7 +1060,7 @@ function renderCart(){
   document.getElementById('discountTotalRow').style.display = discountAmount > 0 ? '' : 'none';
   document.getElementById('discountAmountVal').textContent = '-' + formatCLP(discountAmount);
 
-  document.getElementById('cartTotal').textContent = formatCLP(total - discountAmount);
+  document.getElementById('cartTotal').textContent = formatCLP(total - promoAmount - discountAmount);
   updateFloatingCartBtn();
 }
 
@@ -1101,6 +1110,67 @@ function loadDiscounts(){
       discountCodes = (data && data.items) || [];
     })
     .catch(err => console.error('Error cargando los códigos de descuento:', err));
+}
+
+/* ---------- promociones automáticas (2x1, % en producto específico, etc.) ---------- */
+
+let promotions = [];
+
+function loadPromotions(){
+  if(!APPS_SCRIPT_URL) return;
+  fetch(APPS_SCRIPT_URL + '?action=promos')
+    .then(res => res.json())
+    .then(data => {
+      if(data && data.error){
+        console.error('Error cargando las promociones:', data.error);
+        return;
+      }
+      promotions = (data && data.items) || [];
+      renderCart(); // por si ya había productos en el carrito antes de que cargaran
+    })
+    .catch(err => console.error('Error cargando las promociones:', err));
+}
+
+// Calcula cuánto se descuenta en total por promociones activas, y devuelve
+// también los nombres de las que efectivamente se aplicaron (para mostrar
+// en el carrito y mandar en el pedido).
+function computePromotions(){
+  let discount = 0;
+  const applied = [];
+
+  promotions.forEach(promo => {
+    const matching = cart.filter(item => promo.producto === 'todos' || item.type === promo.producto);
+    if(matching.length === 0) return;
+
+    if(promo.tipo === 'porcentaje'){
+      const subtotal = matching.reduce((s,i)=>s+i.price, 0);
+      const amount = Math.round(subtotal * (promo.porcentaje / 100));
+      if(amount > 0){
+        discount += amount;
+        applied.push(promo.nombre);
+      }
+    } else if(promo.tipo === 'cantidad' && promo.compra > 0){
+      // Se arma una lista con el precio de CADA unidad individual (no por
+      // línea del carrito), para que si hay variantes con precios
+      // distintos, las que salgan "gratis" sean siempre las más baratas
+      // — lo más justo para el cliente.
+      const units = [];
+      matching.forEach(item => {
+        const unitPrice = item.qty > 0 ? item.price / item.qty : 0;
+        for(let i=0; i<item.qty; i++) units.push(unitPrice);
+      });
+      units.sort((a,b)=>a-b);
+
+      const bundles = Math.floor(units.length / promo.compra);
+      const freeCount = bundles * (promo.compra - promo.paga);
+      if(freeCount > 0){
+        for(let i=0; i<freeCount; i++) discount += units[i];
+        applied.push(promo.nombre);
+      }
+    }
+  });
+
+  return { discount: Math.round(discount), applied };
 }
 
 function applyDiscountCode(){
@@ -1160,7 +1230,8 @@ function getDiscountAmount(subtotal){
 
 function updateCheckoutTotal(){
   const subtotal = getCartSubtotal();
-  const discountAmount = getDiscountAmount(subtotal);
+  const promoAmount = computePromotions().discount;
+  const discountAmount = getDiscountAmount(subtotal - promoAmount);
   const fee = checkoutState.delivery === 'envio' ? DELIVERY_FEE : 0;
   const feeRow = document.getElementById('deliveryFeeRow');
 
@@ -1171,7 +1242,7 @@ function updateCheckoutTotal(){
     feeRow.style.display = 'none';
   }
 
-  document.getElementById('checkoutTotal').textContent = formatCLP(subtotal - discountAmount + fee);
+  document.getElementById('checkoutTotal').textContent = formatCLP(subtotal - promoAmount - discountAmount + fee);
 }
 
 function goToCheckout(){
@@ -1236,8 +1307,9 @@ async function buildOrderPayload(){
     });
   }
 
-  const discountAmount = getDiscountAmount(total);
-  const discountedSubtotal = total - discountAmount;
+  const promoResult = computePromotions();
+  const discountAmount = getDiscountAmount(total - promoResult.discount);
+  const discountedSubtotal = total - promoResult.discount - discountAmount;
 
   return {
     secret: SHARED_SECRET,
@@ -1246,6 +1318,7 @@ async function buildOrderPayload(){
     items,
     subtotal: discountedSubtotal,
     discountCode: appliedDiscount ? appliedDiscount.code : null,
+    appliedPromos: promoResult.applied,
     deliveryFee: 0,
     total: formatCLP(discountedSubtotal)
   };
@@ -1826,6 +1899,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   loadStock();
   loadPostits();
   loadDiscounts();
+  loadPromotions();
 
   // Listeners globales del recortador de poster (se agregan una sola vez;
   // cropDrag.active controla si realmente hay que mover algo)
