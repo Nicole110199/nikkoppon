@@ -86,7 +86,7 @@ nav.brandtext .tag{font-size:11px;color:var(--ink-soft);letter-spacing:2px;text-
 }
 .hero-banner::before{
   content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
-  background:linear-gradient(to right, rgba(45,15,70,0.75) 0%, rgba(45,15,70,0.4) 45%, rgba(45,15,70,0.05) 75%);
+  background:rgba(45,15,70,0.22);
 }
 .hero-slides{position:absolute;inset:0;}
 .hero-slide{
