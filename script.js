@@ -118,6 +118,11 @@ const POLAROID_SIZE = { wCm:7.5, hCm:10.5 }; // tamaño total, con marco
 const POLAROID_PHOTO_SIZE = { wCm:6.5, hCm:7.6 }; // ventana de la foto, dentro del marco
 const POLAROID_MARGIN = { top:0.5, left:0.5, right:0.5 }; // el de abajo se calcula solo
 
+// Chapita circular de 5,8 cm de diámetro. Precio único (sin acabados).
+// ⚠️ Si cambias el precio, actualízalo también en google-apps-script.gs (CHAPITA_PRICE).
+const CHAPITA_PRICE = 1500;
+const CHAPITA_SIZE = { wCm:5.8, hCm:5.8 };
+
 const FRAME_LONG_PX = 220;   // tamaño del marco de recorte en pantalla
 const CROP_EXPORT_LONG_PX = 1600; // resolución del recorte final exportado
 
@@ -153,6 +158,7 @@ function openModal(type, prefill){
   const isPoster = type === 'poster';
   const isBookmark = type === 'bookmark';
   const isPolaroid = type === 'polaroid';
+  const isChapita = type === 'chapita';
 
   modalState = {
     type,
@@ -175,12 +181,12 @@ function openModal(type, prefill){
   document.getElementById('qtyVal').textContent = modalState.qty;
 
   document.getElementById('materialField').style.display = (isSticker || isBookmark) ? '' : 'none';
-  document.getElementById('sizeField').style.display = isBookmark ? 'none' : '';
+  document.getElementById('sizeField').style.display = (isBookmark || isChapita) ? 'none' : '';
   document.getElementById('orientationField').style.display = isPoster ? '' : 'none';
   document.getElementById('cropControlsField').style.display = 'none';
   document.getElementById('polaroidSlots').style.display = 'none';
   document.getElementById('modalWindowTitle').textContent =
-    isSticker ? 'STICKER.EXE' : (isPoster ? 'POSTER.EXE' : (isPolaroid ? 'POLAROID.EXE' : 'MARCAPAGINAS.EXE'));
+    isSticker ? 'STICKER.EXE' : (isPoster ? 'POSTER.EXE' : (isPolaroid ? 'POLAROID.EXE' : (isChapita ? 'CHAPITA.EXE' : 'MARCAPAGINAS.EXE')));
 
   if(isSticker){
     const mat = STICKER_MATERIALS[modalState.material];
@@ -192,6 +198,10 @@ function openModal(type, prefill){
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Marcapáginas';
     document.getElementById('modalDesc').textContent = mat.desc + ' Tamaño único: 5 x 20 cm.';
+  } else if(isChapita){
+    document.getElementById('modalEyebrow').textContent = 'Personalizable';
+    document.getElementById('modalTitle').textContent = 'Chapita';
+    document.getElementById('modalDesc').textContent = 'Chapita circular de 5,8 cm. Sube tu imagen y acomódala dentro del círculo: lo que ves es lo que se imprime.';
   } else if(isPolaroid){
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Polaroid';
@@ -378,7 +388,10 @@ function changeQty(delta){
 function computeFrameDims(){
   let wCm, hCm;
 
-  if(modalState.type === 'bookmark'){
+  if(modalState.type === 'chapita'){
+    wCm = CHAPITA_SIZE.wCm;
+    hCm = CHAPITA_SIZE.hCm;
+  } else if(modalState.type === 'bookmark'){
     wCm = BOOKMARK_SIZE.wCm;
     hCm = BOOKMARK_SIZE.hCm;
   } else if(modalState.type === 'polaroid'){
@@ -433,7 +446,8 @@ function buildStage(){
     frame.id = 'cropFrame';
     frame.style.width = frameDims.wPx + 'px';
     frame.style.height = frameDims.hPx + 'px';
-    frame.style.borderRadius = '6px';
+    frame.style.borderRadius = modalState.type === 'chapita' ? '50%' : '6px';
+    if(modalState.type === 'chapita') frame.classList.add('is-round');
     frame.innerHTML =
       '<div class="placeholder upload-placeholder" id="placeholder">' +
         '<div class="dz-icon">✦</div>' +
@@ -567,7 +581,7 @@ function refreshStageContent(){
 
 function renderCropTransform(){
   const img = document.getElementById('artworkImg');
-  const isCropType = modalState.type === 'poster' || modalState.type === 'bookmark' || modalState.type === 'polaroid';
+  const isCropType = modalState.type === 'poster' || modalState.type === 'bookmark' || modalState.type === 'polaroid' || modalState.type === 'chapita';
   if(!img || !isCropType || !modalState.crop.natW) return;
 
   const frameDims = computeFrameDims();
@@ -730,6 +744,9 @@ function updateModalTotals(){
   } else if(modalState.type === 'bookmark'){
     price = BOOKMARK_MATERIALS[modalState.material].basePrice * modalState.qty;
     sizeLabel = '5 x 20 cm';
+  } else if(modalState.type === 'chapita'){
+    price = CHAPITA_PRICE * modalState.qty;
+    sizeLabel = '5,8 cm';
   } else if(modalState.type === 'polaroid'){
     const size = POLAROID_SIZES.find(s=>s.id===modalState.sizeId) || POLAROID_SIZES[0];
     price = size.price * modalState.qty;
@@ -747,6 +764,8 @@ function updateModalTotals(){
     tag = 'Sticker · ' + STICKER_MATERIALS[modalState.material].label + ' · ' + sizeLabel;
   } else if(modalState.type === 'bookmark'){
     tag = 'Marcapáginas · ' + BOOKMARK_MATERIALS[modalState.material].label + ' · ' + sizeLabel;
+  } else if(modalState.type === 'chapita'){
+    tag = 'Chapita · ' + sizeLabel + ' · Circular';
   } else if(modalState.type === 'polaroid'){
     tag = 'Polaroid · ' + sizeLabel + ' · 7,5 x 10,5 cm';
   } else {
@@ -760,7 +779,7 @@ function handleFile(file){
   const reader = new FileReader();
   reader.onload = (e)=>{
     modalState.image = e.target.result;
-    if(modalState.type === 'poster' || modalState.type === 'bookmark' || modalState.type === 'polaroid'){
+    if(modalState.type === 'poster' || modalState.type === 'bookmark' || modalState.type === 'polaroid' || modalState.type === 'chapita'){
       modalState.crop = { rotation:0, zoom:1, offsetX:0, offsetY:0, natW:0, natH:0 };
       document.getElementById('cropZoom').value = 100;
     }
@@ -813,6 +832,30 @@ function reevaluateResolutionWarning(){
   warningEl.style.display = longSide < minPx ? '' : 'none';
 }
 
+// Reduce una imagen muy grande (fotos de celular de 10+ MB) a un máximo de
+// `maxPx` en su lado largo, para que el pedido no pese demasiado al enviarse
+// por correo. Si ya es más chica, se deja tal cual. Los PNG se mantienen PNG
+// (para no perder la transparencia de los stickers).
+function downscaleImageDataUrl(dataUrl, maxPx){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = () => {
+      const longSide = Math.max(img.naturalWidth, img.naturalHeight);
+      if(longSide <= maxPx && dataUrl.length < 4000000){ resolve(dataUrl); return; }
+      const k = Math.min(1, maxPx / longSide);
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * k);
+      c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const isPng = /^data:image\/png/.test(dataUrl);
+      try { resolve(isPng ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.92)); }
+      catch(e){ resolve(dataUrl); }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 async function addToCart(){
   const isSet = isPolaroidSet();
 
@@ -842,7 +885,7 @@ async function addToCart(){
     materialLabel = mat.label;
     materialId = modalState.material;
     sizeId = size.id;
-    finalImage = modalState.image;
+    finalImage = await downscaleImageDataUrl(modalState.image, 2400);
   } else if(modalState.type === 'bookmark'){
     const mat = BOOKMARK_MATERIALS[modalState.material];
     price = mat.basePrice * modalState.qty;
@@ -855,6 +898,17 @@ async function addToCart(){
     materialId = modalState.material;
     sizeId = null;
     finalImage = modalState.image ? exportCroppedImage() : null;
+  } else if(modalState.type === 'chapita'){
+    price = CHAPITA_PRICE * modalState.qty;
+    meta = '5,8 cm · Circular';
+    name = 'Chapita';
+    swatchClass = 'swatch-posterA';
+    boxWcm = CHAPITA_SIZE.wCm;
+    boxHcm = CHAPITA_SIZE.hCm;
+    materialLabel = '';
+    materialId = null;
+    sizeId = null;
+    finalImage = modalState.image ? exportCroppedImage() : null;
   } else if(modalState.type === 'polaroid'){
     const size = POLAROID_SIZES.find(s=>s.id===modalState.sizeId) || POLAROID_SIZES[0];
     price = size.price * modalState.qty;
@@ -865,11 +919,11 @@ async function addToCart(){
     sizeId = size.id;
 
     if(isSet){
-      meta = size.label + ' (5 fotos distintas) · 8 x 10 cm';
+      meta = size.label + ' (5 fotos distintas) · 7,5 x 10,5 cm';
       finalImages = await Promise.all(modalState.polaroidSlots.map(slot => exportSlotImage(slot)));
       finalImage = finalImages[0];
     } else {
-      meta = size.label + ' · 8 x 10 cm';
+      meta = size.label + ' · 7,5 x 10,5 cm';
       finalImage = modalState.image ? exportCroppedImage() : null;
     }
     boxWcm = POLAROID_SIZE.wCm;
@@ -1023,7 +1077,7 @@ function renderCart(){
       thumb.appendChild(sw);
     }
 
-    const canEdit = item.type === 'sticker' || item.type === 'poster' || item.type === 'bookmark' || item.type === 'polaroid';
+    const canEdit = item.type === 'sticker' || item.type === 'poster' || item.type === 'bookmark' || item.type === 'polaroid' || item.type === 'chapita';
     const info = document.createElement('div');
     info.className = 'info';
     info.innerHTML =
@@ -1091,7 +1145,7 @@ function getCartSubtotal(){
 // no tienen compra mínima, ya que no se fabrican especialmente por pedido.
 function getPersonalizedSubtotal(){
   return cart
-    .filter(item => item.type === 'sticker' || item.type === 'poster' || item.type === 'bookmark' || item.type === 'polaroid')
+    .filter(item => item.type === 'sticker' || item.type === 'poster' || item.type === 'bookmark' || item.type === 'polaroid' || item.type === 'chapita')
     .reduce((sum, item) => sum + item.price, 0);
 }
 
@@ -1467,21 +1521,30 @@ async function confirmOrder(){
     address: checkoutState.delivery === 'envio' ? address : ''
   };
 
-  sendOrderToGoogleDoc(payload).finally(()=>{
-    btn.disabled = false;
-    btn.textContent = 'Confirmar pedido';
-    const orderNumber = (document.getElementById('receiptNumber') || {}).textContent || '';
-    document.getElementById('confirmOrderNumber').textContent = orderNumber;
+  const result = await sendOrderToGoogleDoc(payload);
+  btn.disabled = false;
+  btn.textContent = 'Confirmar pedido';
 
-    const expiresAt = Date.now() + 30 * 60 * 1000;
-    activeConfirmation = { orderNumber, expiresAt };
-    saveConfirmationToStorage();
+  // Si el servidor no pudo registrar/enviar el pedido, NO mostramos la
+  // pantalla de éxito (antes se mostraba igual y nadie se enteraba de que
+  // el correo no había salido). El carrito se conserva para reintentar.
+  if(result && !result.skipped && result.ok !== true){
+    console.error('El pedido no se pudo enviar:', result);
+    alert('No pudimos enviar tu pedido en este momento. Tu carrito sigue guardado: intenta de nuevo en unos segundos. Si el problema continúa, escríbenos por Instagram.');
+    return;
+  }
 
-    showView('confirmation');
-    startCountdown(30 * 60);
-    cart = [];
-    renderCart();
-  });
+  const orderNumber = (document.getElementById('receiptNumber') || {}).textContent || '';
+  document.getElementById('confirmOrderNumber').textContent = orderNumber;
+
+  const expiresAt = Date.now() + 30 * 60 * 1000;
+  activeConfirmation = { orderNumber, expiresAt };
+  saveConfirmationToStorage();
+
+  showView('confirmation');
+  startCountdown(30 * 60);
+  cart = [];
+  renderCart();
 }
 
 /* ---------- persistencia de la pantalla de confirmación ----------
