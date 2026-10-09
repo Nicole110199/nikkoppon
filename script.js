@@ -120,7 +120,7 @@ const POLAROID_MARGIN = { top:0.5, left:0.5, right:0.5 }; // el de abajo se calc
 
 // Chapita circular de 5,8 cm de diámetro. Precio único (sin acabados).
 // ⚠️ Si cambias el precio, actualízalo también en google-apps-script.gs (CHAPITA_PRICE).
-const CHAPITA_PRICE = 1500;
+const CHAPITA_PRICE = 800;
 const CHAPITA_SIZE = { wCm:5.8, hCm:5.8 };
 
 const FRAME_LONG_PX = 220;   // tamaño del marco de recorte en pantalla
