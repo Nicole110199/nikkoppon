@@ -201,7 +201,7 @@ function openModal(type, prefill){
   } else if(isChapita){
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Chapita';
-    document.getElementById('modalDesc').textContent = 'Chapita circular de 5,8 cm. Sube tu imagen y acomódala dentro del círculo: lo que ves es lo que se imprime.';
+    document.getElementById('modalDesc').textContent = 'Sube tu imagen y ajústala dentro del círculo guía. Todo lo que veas dentro de esa área circular es lo que se imprimirá en tu chapita. (Ignora el contorno exterior blanco)';
   } else if(isPolaroid){
     document.getElementById('modalEyebrow').textContent = 'Personalizable';
     document.getElementById('modalTitle').textContent = 'Polaroid';
