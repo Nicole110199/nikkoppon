@@ -386,16 +386,24 @@ function renderPolaroidSlots(){
   const wrap = document.getElementById('polaroidSlots');
   if(!wrap) return;
   wrap.innerHTML = '';
-  modalState.polaroidSlots.forEach((slot, i)=>{
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'polaroid-slot' + (slot ? ' filled' : '') + (i === modalState.activeSlot ? ' active' : '');
-    btn.onclick = () => selectPolaroidSlot(i);
-    btn.innerHTML = slot
-      ? '<img src="' + slot.image + '" alt="Foto ' + (i+1) + '"><span class="check">✓</span>'
-      : String(i + 1);
-    wrap.appendChild(btn);
-  });
+  let total = calculateCartSubtotal(cart);
+
+  cart.forEach((item, i)=>{
+    const row = document.createElement('div');
+    row.className = 'cart-item';
+
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    if(item.image){
+      const img = document.createElement('img');
+      img.src = item.image;
+      thumb.appendChild(img);
+    } else {
+      const sw = document.createElement('div');
+      sw.className = item.swatchClass;
+      sw.style.position='absolute'; sw.style.inset='0';
+      thumb.appendChild(sw);
+    }
 }
 
 // Muestra u oculta los slots según si el tipo/tamaño actual es el set de
