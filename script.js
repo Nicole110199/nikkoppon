@@ -1110,14 +1110,12 @@ function renderCart(){
     return;
   }
 
- wrap.innerHTML = '';
+  wrap.innerHTML = '';
   let total = calculateCartSubtotal(cart);
-   cart.forEach((item, i)=>{
+
+  cart.forEach((item, i)=>{
     const row = document.createElement('div');
     row.className = 'cart-item';
-    const thumb = document.createElement('div');
-    thumb.className = 'thumb';
-    
 
     const thumb = document.createElement('div');
     thumb.className = 'thumb';
@@ -1147,6 +1145,33 @@ function renderCart(){
     row.appendChild(info);
     wrap.appendChild(row);
   });
+
+  revalidateAppliedDiscount();
+
+  const promoResult = computePromotions();
+  const promoAmount = promoResult.discount;
+  document.getElementById('promoApplied').style.display = promoAmount > 0 ? '' : 'none';
+  document.getElementById('promoApplied').innerHTML = promoAmount > 0
+    ? '🎉 ' + promoResult.applied.map(escapeHtml).join(' · ') + ' aplicado'
+    : '';
+  document.getElementById('promoTotalRow').style.display = promoAmount > 0 ? '' : 'none';
+  document.getElementById('promoAmountVal').textContent = '-' + formatCLP(promoAmount);
+
+  const discountAmount = getDiscountAmount(total - promoAmount);
+  document.getElementById('discountForm').style.display = appliedDiscount ? 'none' : '';
+  document.getElementById('discountApplied').style.display = appliedDiscount ? '' : 'none';
+  if(appliedDiscount){
+    document.getElementById('discountAppliedCode').textContent = appliedDiscount.code;
+    document.getElementById('discountAppliedDetail').textContent = appliedDiscount.tipo === 'cantidad_fija'
+      ? appliedDiscount.cantidad + ' ' + appliedDiscount.producto + ' por ' + formatCLP(appliedDiscount.precioFijo)
+      : appliedDiscount.percent + '% off';
+  }
+  document.getElementById('discountTotalRow').style.display = discountAmount > 0 ? '' : 'none';
+  document.getElementById('discountAmountVal').textContent = '-' + formatCLP(discountAmount);
+
+  document.getElementById('cartTotal').textContent = formatCLP(total - promoAmount - discountAmount);
+  updateFloatingCartBtn();
+}
 
   revalidateAppliedDiscount();
 
