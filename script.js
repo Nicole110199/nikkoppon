@@ -138,52 +138,7 @@ let modalState = {
 // Para arrastrar la imagen dentro del marco de recorte (estado global,
 // para no ir acumulando listeners cada vez que se reconstruye el marco)
 let cropDrag = { active:false, startX:0, startY:0, baseOffsetX:0, baseOffsetY:0 };
-// ---------- Cálculo de subtotal con promos de stickers (5cm) ----------
-function calculateCartSubtotal(cartItems) {
-  let subtotal = 0;
 
-  const STICKER_BASE = { mate: 300, brillante: 400, tornasol: 500 };
-  const STICKER_MULT = { s: 1, m: 1.4, l: 1.9 };
-
-  // Precios especiales para el pack de 5 unidades (solo 5 cm / tamaño 's')
-  const PACK_PRICES_S = {
-    mate: 1000,
-    brillante: 1500,
-    tornasol: 1750
-  };
-
-  (cartItems || []).forEach(item => {
-    const qty = Number(item.qty) || 0;
-
-    if (item.type === 'sticker') {
-      const base = STICKER_BASE[item.materialId];
-      const mult = STICKER_MULT[item.sizeId];
-
-      if (item.sizeId === 's' && qty >= 5 && PACK_PRICES_S[item.materialId]) {
-        const packs = Math.floor(qty / 5);
-        const resto = qty % 5;
-        const precioPack = PACK_PRICES_S[item.materialId];
-
-        subtotal += (packs * precioPack) + (resto * base * mult);
-      } else if (base && mult) {
-        subtotal += base * mult * qty;
-      }
-    } else if (item.type === 'poster') {
-      const basePrices = { a4: 1200, '10x15': 700 };
-      subtotal += (basePrices[item.sizeId] || 1200) * qty;
-    } else if (item.type === 'bookmark') {
-      const basePrices = { normal: 700, tornasol: 1000 };
-      subtotal += (basePrices[item.materialId] || 700) * qty;
-    } else if (item.type === 'polaroid') {
-      const basePrices = { unidad: 600, set5: 2700 };
-      subtotal += (basePrices[item.sizeId] || 600) * qty;
-    } else if (item.type === 'chapita') {
-      subtotal += 800 * qty;
-    }
-  });
-
-  return subtotal;
-}
 function formatCLP(n){
   return '$' + Math.round(n).toLocaleString('es-CL');
 }
@@ -386,24 +341,16 @@ function renderPolaroidSlots(){
   const wrap = document.getElementById('polaroidSlots');
   if(!wrap) return;
   wrap.innerHTML = '';
-  let total = calculateCartSubtotal(cart);
-
-  cart.forEach((item, i)=>{
-    const row = document.createElement('div');
-    row.className = 'cart-item';
-
-    const thumb = document.createElement('div');
-    thumb.className = 'thumb';
-    if(item.image){
-      const img = document.createElement('img');
-      img.src = item.image;
-      thumb.appendChild(img);
-    } else {
-      const sw = document.createElement('div');
-      sw.className = item.swatchClass;
-      sw.style.position='absolute'; sw.style.inset='0';
-      thumb.appendChild(sw);
-    }
+  modalState.polaroidSlots.forEach((slot, i)=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'polaroid-slot' + (slot ? ' filled' : '') + (i === modalState.activeSlot ? ' active' : '');
+    btn.onclick = () => selectPolaroidSlot(i);
+    btn.innerHTML = slot
+      ? '<img src="' + slot.image + '" alt="Foto ' + (i+1) + '"><span class="check">✓</span>'
+      : String(i + 1);
+    wrap.appendChild(btn);
+  });
 }
 
 // Muestra u oculta los slots según si el tipo/tamaño actual es el set de
@@ -1111,9 +1058,9 @@ function renderCart(){
   }
 
   wrap.innerHTML = '';
-  let total = calculateCartSubtotal(cart);
-
+  let total = 0;
   cart.forEach((item, i)=>{
+    total += item.price;
     const row = document.createElement('div');
     row.className = 'cart-item';
 
@@ -1145,33 +1092,6 @@ function renderCart(){
     row.appendChild(info);
     wrap.appendChild(row);
   });
-
-  revalidateAppliedDiscount();
-
-  const promoResult = computePromotions();
-  const promoAmount = promoResult.discount;
-  document.getElementById('promoApplied').style.display = promoAmount > 0 ? '' : 'none';
-  document.getElementById('promoApplied').innerHTML = promoAmount > 0
-    ? '🎉 ' + promoResult.applied.map(escapeHtml).join(' · ') + ' aplicado'
-    : '';
-  document.getElementById('promoTotalRow').style.display = promoAmount > 0 ? '' : 'none';
-  document.getElementById('promoAmountVal').textContent = '-' + formatCLP(promoAmount);
-
-  const discountAmount = getDiscountAmount(total - promoAmount);
-  document.getElementById('discountForm').style.display = appliedDiscount ? 'none' : '';
-  document.getElementById('discountApplied').style.display = appliedDiscount ? '' : 'none';
-  if(appliedDiscount){
-    document.getElementById('discountAppliedCode').textContent = appliedDiscount.code;
-    document.getElementById('discountAppliedDetail').textContent = appliedDiscount.tipo === 'cantidad_fija'
-      ? appliedDiscount.cantidad + ' ' + appliedDiscount.producto + ' por ' + formatCLP(appliedDiscount.precioFijo)
-      : appliedDiscount.percent + '% off';
-  }
-  document.getElementById('discountTotalRow').style.display = discountAmount > 0 ? '' : 'none';
-  document.getElementById('discountAmountVal').textContent = '-' + formatCLP(discountAmount);
-
-  document.getElementById('cartTotal').textContent = formatCLP(total - promoAmount - discountAmount);
-  updateFloatingCartBtn();
-}
 
   revalidateAppliedDiscount();
 
